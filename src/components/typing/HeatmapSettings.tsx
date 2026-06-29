@@ -8,9 +8,10 @@ import {
 interface Props {
   value: Settings;
   onChange: (next: Settings) => void;
+  onResetStats?: () => void;
 }
 
-export function HeatmapSettings({ value, onChange }: Props) {
+export function HeatmapSettings({ value, onChange, onResetStats }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
