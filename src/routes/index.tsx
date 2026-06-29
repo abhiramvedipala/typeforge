@@ -78,7 +78,7 @@ function Index() {
 
   // Hydrate persisted state
   useEffect(() => {
-    setKeyStats(loadKeyStats());
+    setStats(loadStats());
     try {
       const v = localStorage.getItem(GHOST_TOGGLE_KEY);
       if (v === "1") setGhostEnabled(true);
@@ -103,7 +103,9 @@ function Index() {
   }, [mode, wordsValue, drillLetters]);
 
   useEffect(() => {
-    if (mode === "ai" || mode === "custom") return;
+    if (mode === "ai" || mode === "custom" || mode === "smart") return;
+    activeSmartTargetsRef.current = null;
+    setSmartTargets(null);
     newText();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, timeValue, wordsValue]);
@@ -120,10 +122,15 @@ function Index() {
   const onComplete = useCallback(
     (r: TypingResult) => {
       setResult(r);
-      // Ingest per-key stats
-      const merged = ingestKeystrokes(keyStats, r.keystrokes);
-      setKeyStats(merged);
-      saveKeyStats(merged);
+      // Ingest per-key + bigram stats
+      setStats((prev) => {
+        const merged = ingestRun(prev, r.keystrokes);
+        saveStats(merged);
+        return merged;
+      });
+
+      // Snapshot of smart-drill targets recorded at generation time
+      setSmartTargets(activeSmartTargetsRef.current);
 
       // PR check (use minimum length so flukes don't count)
       const key = ghostKey(mode, timeValue, wordsValue);
@@ -142,7 +149,7 @@ function Index() {
       }
       setPrResult({ isPR: pr, prevBest: prev });
     },
-    [keyStats, mode, timeValue, wordsValue],
+    [mode, timeValue, wordsValue],
   );
 
   const engine = useTypingEngine({
