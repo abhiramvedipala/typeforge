@@ -8,6 +8,21 @@ const InputSchema = z.object({
   difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
 });
 
+const SmartInputSchema = z.object({
+  keys: z.array(z.string().min(1).max(3)).max(20).default([]),
+  bigrams: z.array(z.string().min(2).max(3)).max(20).default([]),
+});
+
+function sanitize(text: string): string {
+  return text
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/\u2026/g, "...")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export const generatePracticeText = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
@@ -29,14 +44,34 @@ export const generatePracticeText = createServerFn({ method: "POST" })
       prompt: `Write a passage for typing practice about: ${data.topic}\n\n${difficultyHint}`,
     });
 
-    // Sanitize: replace smart quotes/dashes etc.
-    const cleaned = text
-      .replace(/[\u2018\u2019]/g, "'")
-      .replace(/[\u201C\u201D]/g, '"')
-      .replace(/[\u2013\u2014]/g, "-")
-      .replace(/\u2026/g, "...")
-      .replace(/\s+/g, " ")
-      .trim();
+    return { text: sanitize(text) };
+  });
 
-    return { text: cleaned };
+export const generateSmartDrillText = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => SmartInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("Missing LOVABLE_API_KEY");
+
+    if (data.keys.length === 0 && data.bigrams.length === 0) {
+      throw new Error("Need at least one target key or bigram");
+    }
+
+    const gateway = createLovableAiGatewayProvider(key);
+
+    const keyList = data.keys.length ? data.keys.join(", ") : "(none)";
+    const bgList = data.bigrams.length ? data.bigrams.join(", ") : "(none)";
+
+    const { text } = await generateText({
+      model: gateway("google/gemini-3-flash-preview"),
+      system:
+        "You generate natural English prose for typing practice. Output ONLY the practice text — no preamble, no quotes, no markdown, no titles, no explanations. Use plain ASCII punctuation only (no smart quotes, em-dashes, or special characters). The text MUST read like real coherent English sentences a person would actually write — not nonsense, not a list of words, not letter soup.",
+      prompt:
+        `Write 110-150 words of coherent English prose suitable for typing practice. ` +
+        `Weight the vocabulary so the following trouble letters appear noticeably more often than in normal English (without being absurd): ${keyList}. ` +
+        `Also include these letter pairs (bigrams) more often than usual, embedded naturally inside real words: ${bgList}. ` +
+        `Do NOT produce text made only of these letters. Do NOT list words. Write 4-7 real sentences that flow naturally. Keep punctuation simple: periods, commas, apostrophes only.`,
+    });
+
+    return { text: sanitize(text) };
   });
