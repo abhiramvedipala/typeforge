@@ -11,6 +11,8 @@ import {
 } from "recharts";
 import confetti from "canvas-confetti";
 import type { TypingResult } from "@/hooks/use-typing-engine";
+import { ImprovementPanel } from "./ImprovementPanel";
+import type { TargetSnapshot } from "@/lib/keystats";
 
 interface Props {
   result: TypingResult;
@@ -18,9 +20,10 @@ interface Props {
   onNew: () => void;
   isPersonalRecord?: boolean;
   previousBestWpm?: number | null;
+  smartTargets?: { keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null;
 }
 
-export function Results({ result, onRestart, onNew, isPersonalRecord, previousBestWpm }: Props) {
+export function Results({ result, onRestart, onNew, isPersonalRecord, previousBestWpm, smartTargets }: Props) {
   const firedRef = useRef(false);
 
   useEffect(() => {
