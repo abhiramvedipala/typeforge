@@ -6,6 +6,15 @@ export interface WpmSample {
   t: number; // seconds since start
   wpm: number;
   raw: number;
+  errors: number; // cumulative incorrect keystrokes
+}
+
+export interface Keystroke {
+  t: number; // ms since start
+  idx: number; // expected index at moment of keystroke (input.length before push)
+  key: string;
+  expected: string | undefined;
+  correct: boolean;
 }
 
 export interface TypingResult {
@@ -18,26 +27,27 @@ export interface TypingResult {
   missedChars: number;
   elapsed: number;
   samples: WpmSample[];
+  keystrokes: Keystroke[];
+  text: string;
 }
 
 interface Options {
   text: string;
-  // For time mode: stop test after timeLimit seconds. If undefined => ends when text complete.
   timeLimit?: number;
-  // If true, no time limit and no completion - manual stop only (zen)
   zen?: boolean;
   onComplete?: (result: TypingResult) => void;
+  onKeystroke?: (k: Keystroke) => void;
 }
 
-export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
+export function useTypingEngine({ text, timeLimit, zen, onComplete, onKeystroke }: Options) {
   const [input, setInput] = useState("");
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [now, setNow] = useState(0); // ms elapsed
+  const [now, setNow] = useState(0);
   const startTimeRef = useRef<number | null>(null);
   const samplesRef = useRef<WpmSample[]>([]);
+  const keystrokesRef = useRef<Keystroke[]>([]);
   const lastSampleSecondRef = useRef<number>(-1);
-  // Track all keystrokes for raw wpm
   const totalKeystrokesRef = useRef(0);
   const incorrectKeystrokesRef = useRef(0);
 
@@ -48,12 +58,12 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
     setNow(0);
     startTimeRef.current = null;
     samplesRef.current = [];
+    keystrokesRef.current = [];
     lastSampleSecondRef.current = -1;
     totalKeystrokesRef.current = 0;
     incorrectKeystrokesRef.current = 0;
   }, []);
 
-  // Reset when text changes
   useEffect(() => {
     reset();
   }, [text, reset]);
@@ -65,22 +75,14 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
       let incorrect = 0;
       let extra = 0;
       for (let i = 0; i < input.length; i++) {
-        if (i >= text.length) {
-          extra++;
-        } else if (input[i] === text[i]) {
-          correct++;
-        } else {
-          incorrect++;
-        }
+        if (i >= text.length) extra++;
+        else if (input[i] === text[i]) correct++;
+        else incorrect++;
       }
-      const missed = Math.max(0, text.length - input.length - 0); // chars not yet typed (only used at end of test)
+      const missed = Math.max(0, text.length - input.length);
       const minutes = Math.max(elapsed / 60, 1 / 60);
       const wpm = Math.max(0, Math.round((correct / 5) / minutes));
-      const rawWpm = Math.max(
-        0,
-        Math.round((totalKeystrokesRef.current / 5) / minutes),
-      );
-      const typedTotal = correct + incorrect + extra;
+      const rawWpm = Math.max(0, Math.round((totalKeystrokesRef.current / 5) / minutes));
       const accuracy =
         totalKeystrokesRef.current === 0
           ? 100
@@ -101,14 +103,12 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
         incorrectChars: incorrect,
         extraChars: extra,
         missedChars: missed,
-        typedTotal,
         elapsed,
       };
     },
     [input, text],
   );
 
-  // Live ticker
   useEffect(() => {
     if (!started || finished) return;
     const id = setInterval(() => {
@@ -118,7 +118,12 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
       if (sec !== lastSampleSecondRef.current && sec > 0) {
         lastSampleSecondRef.current = sec;
         const s = computeStats(elapsed);
-        samplesRef.current.push({ t: sec, wpm: s.wpm, raw: s.rawWpm });
+        samplesRef.current.push({
+          t: sec,
+          wpm: s.wpm,
+          raw: s.rawWpm,
+          errors: incorrectKeystrokesRef.current,
+        });
       }
       if (timeLimit && elapsed >= timeLimit * 1000) {
         finishTest(timeLimit * 1000);
@@ -144,18 +149,18 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
         missedChars: s.missedChars,
         elapsed: s.elapsed,
         samples: samplesRef.current,
+        keystrokes: keystrokesRef.current,
+        text,
       };
       onComplete?.(result);
     },
-    [computeStats, finished, onComplete],
+    [computeStats, finished, onComplete, text],
   );
 
-  // Keyboard handler
   const onKey = useCallback(
     (e: KeyboardEvent) => {
       if (finished) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      // Ignore when user is typing in an input/textarea/select
       const target = e.target as HTMLElement | null;
       if (
         target &&
@@ -172,7 +177,6 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
         return;
       }
 
-      // Only count printable single chars and space
       if (e.key.length !== 1) return;
       e.preventDefault();
 
@@ -183,20 +187,29 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
 
       const idx = input.length;
       const expected = text[idx];
+      const correct = e.key === expected;
       totalKeystrokesRef.current += 1;
-      if (e.key !== expected) {
-        incorrectKeystrokesRef.current += 1;
-      }
+      if (!correct) incorrectKeystrokesRef.current += 1;
+
+      const ks: Keystroke = {
+        t: Date.now() - (startTimeRef.current ?? Date.now()),
+        idx,
+        key: e.key,
+        expected,
+        correct,
+      };
+      keystrokesRef.current.push(ks);
+      onKeystroke?.(ks);
+
       setInput((prev) => {
         const next = prev + e.key;
         if (!zen && !timeLimit && next.length >= text.length) {
-          // text mode completion
           setTimeout(() => finishTest(), 0);
         }
         return next;
       });
     },
-    [finished, started, input.length, text, zen, timeLimit, finishTest],
+    [finished, started, input.length, text, zen, timeLimit, finishTest, onKeystroke],
   );
 
   useEffect(() => {
