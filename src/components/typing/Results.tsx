@@ -150,6 +150,14 @@ export function Results({ result, onRestart, onNew, isPersonalRecord, previousBe
         <Stat label="missed" value={result.missedChars} />
       </div>
 
+      {smartTargets && (smartTargets.keys.length > 0 || smartTargets.bigrams.length > 0) && (
+        <ImprovementPanel
+          keystrokes={result.keystrokes}
+          targets={{ keys: smartTargets.keys, bigrams: smartTargets.bigrams }}
+          snapshot={smartTargets.snapshot}
+        />
+      )}
+
       <div className="flex gap-3 justify-center">
         <button
           onClick={onRestart}
