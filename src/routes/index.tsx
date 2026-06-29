@@ -102,7 +102,10 @@ function Index() {
   useEffect(() => {
     let tabHeld = false;
     function down(e: KeyboardEvent) {
-      if (e.key === "Tab") tabHeld = true;
+      if (e.key === "Tab") {
+        e.preventDefault();
+        tabHeld = true;
+      }
       if (e.key === "Enter" && tabHeld) {
         e.preventDefault();
         restart();
