@@ -28,6 +28,7 @@ export function ModeBar({
       <ModeBtn active={mode === "zen"} onClick={() => setMode("zen")}>zen</ModeBtn>
       <ModeBtn active={mode === "ai"} onClick={() => setMode("ai")}>ai</ModeBtn>
       <ModeBtn active={mode === "drill"} onClick={() => setMode("drill")}>drill</ModeBtn>
+      <ModeBtn active={mode === "smart"} onClick={() => setMode("smart")}>smart</ModeBtn>
       <ModeBtn active={mode === "custom"} onClick={() => setMode("custom")}>custom</ModeBtn>
 
       <span className="w-px h-5 bg-[color:var(--type-border)] mx-2" />

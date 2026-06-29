@@ -12,12 +12,14 @@ import { CustomTextInput } from "@/components/typing/CustomTextInput";
 import { LiveStats } from "@/components/typing/LiveStats";
 import { Keyboard } from "@/components/typing/Keyboard";
 import { SoundToggle, useSoundProfile } from "@/components/typing/SoundToggle";
+import { SmartDrill } from "@/components/typing/SmartDrill";
 import { drillWords, randomQuote, randomWords } from "@/lib/words";
 import {
-  ingestKeystrokes,
-  loadKeyStats,
-  saveKeyStats,
-  type KeyStatsMap,
+  ingestRun,
+  loadStats,
+  saveStats,
+  type StatsBundle,
+  type TargetSnapshot,
 } from "@/lib/keystats";
 import { playKeySound } from "@/lib/sounds";
 import {
@@ -61,7 +63,7 @@ function Index() {
   const [result, setResult] = useState<TypingResult | null>(null);
   const [restartTick, setRestartTick] = useState(0);
 
-  const [keyStats, setKeyStats] = useState<KeyStatsMap>({});
+  const [stats, setStats] = useState<StatsBundle>({ keys: {}, bigrams: {}, testCount: 0 });
   const [soundProfile, setSoundProfile] = useSoundProfile();
   const [ghostEnabled, setGhostEnabled] = useState(false);
   const [bestForMode, setBestForMode] = useState<BestRun | null>(null);
@@ -70,10 +72,13 @@ function Index() {
     prevBest: null,
   });
   const [ghostIdx, setGhostIdx] = useState<number | null>(null);
+  const [smartTargets, setSmartTargets] =
+    useState<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
+  const activeSmartTargetsRef = useRef<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
 
   // Hydrate persisted state
   useEffect(() => {
-    setKeyStats(loadKeyStats());
+    setStats(loadStats());
     try {
       const v = localStorage.getItem(GHOST_TOGGLE_KEY);
       if (v === "1") setGhostEnabled(true);
@@ -95,10 +100,18 @@ function Index() {
     else if (mode === "zen") setText(randomWords(200).join(" "));
     else if (mode === "drill")
       setText(drillWords(drillLetters.length ? drillLetters : ["a", "s", "d", "f"], 40).join(" "));
+    else if (mode === "smart" || mode === "ai" || mode === "custom") {
+      // Clear so the input/picker UI shows; user generates next text manually.
+      setText("");
+      activeSmartTargetsRef.current = null;
+      setSmartTargets(null);
+    }
   }, [mode, wordsValue, drillLetters]);
 
   useEffect(() => {
-    if (mode === "ai" || mode === "custom") return;
+    if (mode === "ai" || mode === "custom" || mode === "smart") return;
+    activeSmartTargetsRef.current = null;
+    setSmartTargets(null);
     newText();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, timeValue, wordsValue]);
@@ -115,10 +128,15 @@ function Index() {
   const onComplete = useCallback(
     (r: TypingResult) => {
       setResult(r);
-      // Ingest per-key stats
-      const merged = ingestKeystrokes(keyStats, r.keystrokes);
-      setKeyStats(merged);
-      saveKeyStats(merged);
+      // Ingest per-key + bigram stats
+      setStats((prev) => {
+        const merged = ingestRun(prev, r.keystrokes);
+        saveStats(merged);
+        return merged;
+      });
+
+      // Snapshot of smart-drill targets recorded at generation time
+      setSmartTargets(activeSmartTargetsRef.current);
 
       // PR check (use minimum length so flukes don't count)
       const key = ghostKey(mode, timeValue, wordsValue);
@@ -137,7 +155,7 @@ function Index() {
       }
       setPrResult({ isPR: pr, prevBest: prev });
     },
-    [keyStats, mode, timeValue, wordsValue],
+    [mode, timeValue, wordsValue],
   );
 
   const engine = useTypingEngine({
@@ -219,7 +237,7 @@ function Index() {
     return `${(engine.elapsedMs / 1000).toFixed(1)}s`;
   }, [engine.elapsedMs, mode, timeValue]);
 
-  const needsTextInput = (mode === "ai" || mode === "custom") && !text;
+  const needsTextInput = (mode === "ai" || mode === "custom" || mode === "smart") && !text;
 
   const toggleGhost = () => {
     setGhostEnabled((g) => {
@@ -287,6 +305,18 @@ function Index() {
                 onGenerate={newText}
               />
             )}
+            {mode === "smart" && (
+              <SmartDrill
+                stats={stats}
+                onText={(t, targets) => {
+                  activeSmartTargetsRef.current = targets;
+                  setSmartTargets(null);
+                  setText(t);
+                  setResult(null);
+                  setRestartTick((n) => n + 1);
+                }}
+              />
+            )}
 
             {/* Ghost-race toggle */}
             <div className="flex items-center gap-4 text-xs font-mono">
@@ -338,7 +368,7 @@ function Index() {
 
             {/* Heatmap */}
             <div className="mt-4">
-              <Keyboard stats={keyStats} />
+              <Keyboard stats={stats.keys} />
             </div>
           </>
         )}
@@ -350,6 +380,7 @@ function Index() {
             onNew={restart}
             isPersonalRecord={prResult.isPR}
             previousBestWpm={prResult.prevBest}
+            smartTargets={smartTargets}
           />
         )}
       </main>

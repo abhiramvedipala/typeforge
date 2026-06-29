@@ -11,6 +11,8 @@ import {
 } from "recharts";
 import confetti from "canvas-confetti";
 import type { TypingResult } from "@/hooks/use-typing-engine";
+import { ImprovementPanel } from "./ImprovementPanel";
+import type { TargetSnapshot } from "@/lib/keystats";
 
 interface Props {
   result: TypingResult;
@@ -18,9 +20,10 @@ interface Props {
   onNew: () => void;
   isPersonalRecord?: boolean;
   previousBestWpm?: number | null;
+  smartTargets?: { keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null;
 }
 
-export function Results({ result, onRestart, onNew, isPersonalRecord, previousBestWpm }: Props) {
+export function Results({ result, onRestart, onNew, isPersonalRecord, previousBestWpm, smartTargets }: Props) {
   const firedRef = useRef(false);
 
   useEffect(() => {
@@ -146,6 +149,14 @@ export function Results({ result, onRestart, onNew, isPersonalRecord, previousBe
         <Stat label="extra" value={result.extraChars} />
         <Stat label="missed" value={result.missedChars} />
       </div>
+
+      {smartTargets && (smartTargets.keys.length > 0 || smartTargets.bigrams.length > 0) && (
+        <ImprovementPanel
+          keystrokes={result.keystrokes}
+          targets={{ keys: smartTargets.keys, bigrams: smartTargets.bigrams }}
+          snapshot={smartTargets.snapshot}
+        />
+      )}
 
       <div className="flex gap-3 justify-center">
         <button
