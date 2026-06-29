@@ -1,19 +1,69 @@
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { useEffect, useRef } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import confetti from "canvas-confetti";
 import type { TypingResult } from "@/hooks/use-typing-engine";
 
 interface Props {
   result: TypingResult;
   onRestart: () => void;
   onNew: () => void;
+  isPersonalRecord?: boolean;
+  previousBestWpm?: number | null;
 }
 
-export function Results({ result, onRestart, onNew }: Props) {
+export function Results({ result, onRestart, onNew, isPersonalRecord, previousBestWpm }: Props) {
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isPersonalRecord || firedRef.current) return;
+    firedRef.current = true;
+    // Pull accent color from theme for themed confetti
+    const accent =
+      getComputedStyle(document.documentElement).getPropertyValue("--type-accent").trim() ||
+      "#facc15";
+    const burst = (origin: { x: number; y: number }) =>
+      confetti({
+        particleCount: 90,
+        spread: 70,
+        origin,
+        startVelocity: 45,
+        ticks: 200,
+        scalar: 0.9,
+        colors: [accent, "#ffffff", "#22d3ee", "#f472b6"],
+      });
+    burst({ x: 0.2, y: 0.3 });
+    burst({ x: 0.8, y: 0.3 });
+    setTimeout(() => burst({ x: 0.5, y: 0.2 }), 250);
+  }, [isPersonalRecord]);
+
   const data = result.samples.length
     ? result.samples
-    : [{ t: 0, wpm: result.wpm, raw: result.rawWpm }];
+    : [{ t: 0, wpm: result.wpm, raw: result.rawWpm, errors: result.incorrectChars }];
 
   return (
     <div className="w-full max-w-5xl mx-auto py-12 px-4">
+      {isPersonalRecord && (
+        <div className="text-center mb-6 animate-fade-in">
+          <div className="inline-block px-4 py-2 rounded-md border border-[color:var(--type-accent)] text-[color:var(--type-accent)] font-mono text-sm tracking-wider">
+            ★ new personal best
+            {previousBestWpm != null && (
+              <span className="text-[color:var(--type-muted)] ml-2 text-xs">
+                (prev {previousBestWpm} wpm)
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         <Stat label="wpm" value={result.wpm} big />
         <Stat label="accuracy" value={`${result.accuracy}%`} big />
@@ -29,9 +79,25 @@ export function Results({ result, onRestart, onNew }: Props) {
               dataKey="t"
               stroke="var(--type-muted)"
               tick={{ fontSize: 12 }}
-              label={{ value: "seconds", position: "insideBottom", offset: -2, fill: "var(--type-muted)" }}
+              label={{
+                value: "seconds",
+                position: "insideBottom",
+                offset: -2,
+                fill: "var(--type-muted)",
+              }}
             />
-            <YAxis stroke="var(--type-muted)" tick={{ fontSize: 12 }} />
+            <YAxis
+              yAxisId="left"
+              stroke="var(--type-muted)"
+              tick={{ fontSize: 12 }}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              stroke="var(--type-error)"
+              tick={{ fontSize: 12 }}
+              allowDecimals={false}
+            />
             <Tooltip
               contentStyle={{
                 background: "var(--type-surface)",
@@ -39,19 +105,34 @@ export function Results({ result, onRestart, onNew }: Props) {
                 color: "var(--type-text)",
               }}
             />
+            <Legend wrapperStyle={{ fontSize: 11, color: "var(--type-muted)" }} />
             <Line
+              yAxisId="left"
               type="monotone"
               dataKey="wpm"
+              name="wpm"
               stroke="var(--type-accent)"
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}
             />
             <Line
+              yAxisId="left"
               type="monotone"
               dataKey="raw"
+              name="raw"
               stroke="var(--type-muted)"
               strokeWidth={1}
+              dot={false}
+              isAnimationActive={false}
+            />
+            <Line
+              yAxisId="right"
+              type="stepAfter"
+              dataKey="errors"
+              name="errors"
+              stroke="var(--type-error)"
+              strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}
             />
