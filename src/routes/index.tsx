@@ -102,6 +102,14 @@ function Index() {
   useEffect(() => {
     let tabHeld = false;
     function down(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const inField =
+        !!target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+      if (inField) return;
       if (e.key === "Tab") {
         e.preventDefault();
         tabHeld = true;
