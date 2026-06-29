@@ -12,12 +12,14 @@ import { CustomTextInput } from "@/components/typing/CustomTextInput";
 import { LiveStats } from "@/components/typing/LiveStats";
 import { Keyboard } from "@/components/typing/Keyboard";
 import { SoundToggle, useSoundProfile } from "@/components/typing/SoundToggle";
+import { SmartDrill } from "@/components/typing/SmartDrill";
 import { drillWords, randomQuote, randomWords } from "@/lib/words";
 import {
-  ingestKeystrokes,
-  loadKeyStats,
-  saveKeyStats,
-  type KeyStatsMap,
+  ingestRun,
+  loadStats,
+  saveStats,
+  type StatsBundle,
+  type TargetSnapshot,
 } from "@/lib/keystats";
 import { playKeySound } from "@/lib/sounds";
 import {
