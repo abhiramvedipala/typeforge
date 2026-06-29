@@ -100,6 +100,12 @@ function Index() {
     else if (mode === "zen") setText(randomWords(200).join(" "));
     else if (mode === "drill")
       setText(drillWords(drillLetters.length ? drillLetters : ["a", "s", "d", "f"], 40).join(" "));
+    else if (mode === "smart" || mode === "ai" || mode === "custom") {
+      // Clear so the input/picker UI shows; user generates next text manually.
+      setText("");
+      activeSmartTargetsRef.current = null;
+      setSmartTargets(null);
+    }
   }, [mode, wordsValue, drillLetters]);
 
   useEffect(() => {
