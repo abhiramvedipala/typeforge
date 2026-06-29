@@ -63,7 +63,7 @@ function Index() {
   const [result, setResult] = useState<TypingResult | null>(null);
   const [restartTick, setRestartTick] = useState(0);
 
-  const [keyStats, setKeyStats] = useState<KeyStatsMap>({});
+  const [stats, setStats] = useState<StatsBundle>({ keys: {}, bigrams: {}, testCount: 0 });
   const [soundProfile, setSoundProfile] = useSoundProfile();
   const [ghostEnabled, setGhostEnabled] = useState(false);
   const [bestForMode, setBestForMode] = useState<BestRun | null>(null);
@@ -72,6 +72,9 @@ function Index() {
     prevBest: null,
   });
   const [ghostIdx, setGhostIdx] = useState<number | null>(null);
+  const [smartTargets, setSmartTargets] =
+    useState<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
+  const activeSmartTargetsRef = useRef<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
 
   // Hydrate persisted state
   useEffect(() => {
