@@ -374,6 +374,7 @@ function Index() {
             onNew={restart}
             isPersonalRecord={prResult.isPR}
             previousBestWpm={prResult.prevBest}
+            smartTargets={smartTargets}
           />
         )}
       </main>
