@@ -8,9 +8,10 @@ import {
 interface Props {
   value: Settings;
   onChange: (next: Settings) => void;
+  onResetStats?: () => void;
 }
 
-export function HeatmapSettings({ value, onChange }: Props) {
+export function HeatmapSettings({ value, onChange, onResetStats }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -95,9 +96,30 @@ export function HeatmapSettings({ value, onChange }: Props) {
               onClick={reset}
               className="text-[color:var(--type-muted)] hover:text-[color:var(--type-text)] underline"
             >
-              reset
+              reset thresholds
             </button>
           </div>
+          {onResetStats && (
+            <div className="mt-2 pt-2 border-t border-[color:var(--type-border)]">
+              <button
+                type="button"
+                onClick={() => {
+                  if (
+                    typeof window !== "undefined" &&
+                    window.confirm(
+                      "Clear all per-key and per-bigram stats? This cannot be undone.",
+                    )
+                  ) {
+                    onResetStats();
+                    setOpen(false);
+                  }
+                }}
+                className="w-full px-2 py-1.5 rounded border border-[color:var(--type-border)] text-[color:var(--type-muted)] hover:text-[color:var(--type-text)] hover:border-[color:var(--type-text)] transition-colors"
+              >
+                clear heatmap history
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
