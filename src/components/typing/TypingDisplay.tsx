@@ -3,59 +3,67 @@ import { useEffect, useMemo, useRef, useState } from "react";
 interface Props {
   text: string;
   input: string;
+  ghostIdx?: number | null;
 }
 
-// Renders the words with per-char coloring and an animated caret.
-export function TypingDisplay({ text, input }: Props) {
+export function TypingDisplay({ text, input, ghostIdx }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const caretRef = useRef<HTMLSpanElement>(null);
   const [caretStyle, setCaretStyle] = useState<{ left: number; top: number; height: number } | null>(
     null,
   );
+  const [ghostStyle, setGhostStyle] = useState<{
+    left: number;
+    top: number;
+    height: number;
+  } | null>(null);
 
-  // Split text into words preserving positions
   const tokens = useMemo(() => {
     const out: { char: string; index: number }[] = [];
     for (let i = 0; i < text.length; i++) out.push({ char: text[i], index: i });
-    // Add an extra slot for caret-at-end
     return out;
   }, [text]);
 
-  // After render, position caret based on the current char
-  useEffect(() => {
+  function positionFor(idx: number) {
     const container = containerRef.current;
-    if (!container) return;
-    const idx = input.length;
+    if (!container) return null;
     const target = container.querySelector<HTMLElement>(`[data-i="${idx}"]`);
+    const cRect = container.getBoundingClientRect();
     if (target) {
-      const cRect = container.getBoundingClientRect();
       const tRect = target.getBoundingClientRect();
-      setCaretStyle({
+      return {
         left: tRect.left - cRect.left,
         top: tRect.top - cRect.top,
         height: tRect.height,
-      });
-    } else {
-      // caret at end
-      const last = container.querySelector<HTMLElement>(`[data-i="${idx - 1}"]`);
-      if (last) {
-        const cRect = container.getBoundingClientRect();
-        const tRect = last.getBoundingClientRect();
-        setCaretStyle({
-          left: tRect.right - cRect.left,
-          top: tRect.top - cRect.top,
-          height: tRect.height,
-        });
-      }
+      };
     }
+    const last = container.querySelector<HTMLElement>(`[data-i="${idx - 1}"]`);
+    if (last) {
+      const tRect = last.getBoundingClientRect();
+      return {
+        left: tRect.right - cRect.left,
+        top: tRect.top - cRect.top,
+        height: tRect.height,
+      };
+    }
+    return null;
+  }
+
+  useEffect(() => {
+    setCaretStyle(positionFor(input.length));
   }, [input, text]);
 
-  // Scroll active line into view roughly by translating container vertically
+  useEffect(() => {
+    if (ghostIdx == null) {
+      setGhostStyle(null);
+      return;
+    }
+    setGhostStyle(positionFor(Math.min(ghostIdx, text.length)));
+  }, [ghostIdx, text, input.length]);
+
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
     if (!caretStyle) return;
     const lineH = caretStyle.height;
-    // Keep caret around the second visible line
     const desired = Math.max(0, caretStyle.top - lineH * 1);
     setScrollY(desired);
   }, [caretStyle]);
@@ -80,17 +88,11 @@ export function TypingDisplay({ text, input }: Props) {
                     : "text-[color:var(--type-error)]";
             }
             return (
-              <span
-                key={index}
-                data-i={index}
-                className={cls}
-                style={{ whiteSpace: "pre" }}
-              >
+              <span key={index} data-i={index} className={cls} style={{ whiteSpace: "pre" }}>
                 {char}
               </span>
             );
           })}
-          {/* Extra typed chars beyond text */}
           {input.length > text.length && (
             <span className="text-[color:var(--type-error)] opacity-60">
               {input.slice(text.length)}
@@ -98,9 +100,24 @@ export function TypingDisplay({ text, input }: Props) {
           )}
         </div>
 
+        {ghostStyle && (
+          <span
+            aria-hidden
+            className="absolute w-[2px] rounded-sm"
+            style={{
+              left: ghostStyle.left - 1,
+              top: ghostStyle.top,
+              height: ghostStyle.height * 0.85,
+              background: "var(--type-muted)",
+              opacity: 0.55,
+              boxShadow: "0 0 6px var(--type-muted)",
+              transition: "left 80ms linear, top 120ms linear",
+            }}
+          />
+        )}
+
         {caretStyle && (
           <span
-            ref={caretRef}
             aria-hidden
             className="absolute w-[2px] bg-[color:var(--type-caret)] caret-blink rounded-sm"
             style={{
