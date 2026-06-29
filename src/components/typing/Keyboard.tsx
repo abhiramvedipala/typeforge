@@ -1,8 +1,13 @@
 import { useMemo } from "react";
 import { scoreForKey, type KeyStatsMap } from "@/lib/keystats";
+import {
+  DEFAULT_HEATMAP_SETTINGS,
+  type HeatmapSettings,
+} from "@/lib/heatmap-settings";
 
 interface Props {
   stats: KeyStatsMap;
+  settings?: HeatmapSettings;
 }
 
 const ROWS: string[][] = [
@@ -11,16 +16,15 @@ const ROWS: string[][] = [
   ["z", "x", "c", "v", "b", "n", "m"],
 ];
 
-// Map a 0..1 health score (higher = better) onto a green->yellow->red OKLCH color.
-// 1 = green, 0.5 = yellow, 0 = red.
-function healthColor(health: number): string {
+// Bucket a 0..1 health score into red / yellow / green based on the user's thresholds.
+function bucketColor(health: number, s: HeatmapSettings): string {
   const h = Math.max(0, Math.min(1, health));
-  // hue: 25 (red) -> 90 (yellow) -> 145 (green)
-  const hue = 25 + h * 120;
-  return `oklch(0.65 0.18 ${hue.toFixed(1)})`;
+  if (h < s.redThreshold) return "oklch(0.62 0.19 25)"; // red
+  if (h < s.yellowThreshold) return "oklch(0.78 0.16 90)"; // yellow
+  return "oklch(0.68 0.17 145)"; // green
 }
 
-export function Keyboard({ stats }: Props) {
+export function Keyboard({ stats, settings = DEFAULT_HEATMAP_SETTINGS }: Props) {
   // Compute the slowest and fastest avgMs across all tracked keys to normalize speed scoring.
   const { minMs, maxMs } = useMemo(() => {
     let mn = Infinity;
@@ -47,9 +51,9 @@ export function Keyboard({ stats }: Props) {
       const norm = (s.avgMs - minMs) / Math.max(1, maxMs - minMs); // 0 fast .. 1 slow
       speed = 1 - norm;
     }
-    // weight accuracy heavier than speed
-    const health = acc * 0.65 + speed * 0.35;
-    return healthColor(health);
+    const accW = settings.accuracyWeight;
+    const health = acc * accW + speed * (1 - accW);
+    return bucketColor(health, settings);
   }
 
   function keyTitle(letter: string): string {
