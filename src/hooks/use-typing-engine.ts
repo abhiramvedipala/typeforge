@@ -154,8 +154,17 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete }: Options) {
   const onKey = useCallback(
     (e: KeyboardEvent) => {
       if (finished) return;
-      // Ignore modifier-key combos
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Ignore when user is typing in an input/textarea/select
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      )
+        return;
 
       if (e.key === "Backspace") {
         e.preventDefault();
