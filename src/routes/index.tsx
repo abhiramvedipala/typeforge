@@ -362,7 +362,7 @@ function Index() {
 
             {/* Heatmap */}
             <div className="mt-4">
-              <Keyboard stats={keyStats} />
+              <Keyboard stats={stats.keys} />
             </div>
           </>
         )}
