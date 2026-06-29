@@ -231,7 +231,7 @@ function Index() {
     return `${(engine.elapsedMs / 1000).toFixed(1)}s`;
   }, [engine.elapsedMs, mode, timeValue]);
 
-  const needsTextInput = (mode === "ai" || mode === "custom") && !text;
+  const needsTextInput = (mode === "ai" || mode === "custom" || mode === "smart") && !text;
 
   const toggleGhost = () => {
     setGhostEnabled((g) => {
