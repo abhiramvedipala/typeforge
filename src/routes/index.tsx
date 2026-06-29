@@ -23,6 +23,7 @@ import { drillWords, randomQuote, randomWords } from "@/lib/words";
 import {
   ingestRun,
   loadStats,
+  resetStats,
   saveStats,
   type StatsBundle,
   type TargetSnapshot,
@@ -377,7 +378,14 @@ function Index() {
             {/* Heatmap */}
             <div className="mt-4">
               <div className="flex justify-end mb-2">
-                <HeatmapSettings value={heatmapSettings} onChange={setHeatmapSettings} />
+                <HeatmapSettings
+                  value={heatmapSettings}
+                  onChange={setHeatmapSettings}
+                  onResetStats={() => {
+                    resetStats();
+                    setStats({ keys: {}, bigrams: {}, testCount: 0 });
+                  }}
+                />
               </div>
               <Keyboard stats={stats.keys} settings={heatmapSettings} />
             </div>
