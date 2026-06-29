@@ -11,8 +11,14 @@ import { DrillSelector } from "@/components/typing/DrillSelector";
 import { CustomTextInput } from "@/components/typing/CustomTextInput";
 import { LiveStats } from "@/components/typing/LiveStats";
 import { Keyboard } from "@/components/typing/Keyboard";
+import { HeatmapSettings } from "@/components/typing/HeatmapSettings";
 import { SoundToggle, useSoundProfile } from "@/components/typing/SoundToggle";
 import { SmartDrill } from "@/components/typing/SmartDrill";
+import {
+  DEFAULT_HEATMAP_SETTINGS,
+  loadHeatmapSettings,
+  type HeatmapSettings as HeatmapSettingsType,
+} from "@/lib/heatmap-settings";
 import { drillWords, randomQuote, randomWords } from "@/lib/words";
 import {
   ingestRun,
@@ -75,10 +81,12 @@ function Index() {
   const [smartTargets, setSmartTargets] =
     useState<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
   const activeSmartTargetsRef = useRef<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
+  const [heatmapSettings, setHeatmapSettings] = useState<HeatmapSettingsType>(DEFAULT_HEATMAP_SETTINGS);
 
   // Hydrate persisted state
   useEffect(() => {
     setStats(loadStats());
+    setHeatmapSettings(loadHeatmapSettings());
     try {
       const v = localStorage.getItem(GHOST_TOGGLE_KEY);
       if (v === "1") setGhostEnabled(true);
@@ -368,7 +376,10 @@ function Index() {
 
             {/* Heatmap */}
             <div className="mt-4">
-              <Keyboard stats={stats.keys} />
+              <div className="flex justify-end mb-2">
+                <HeatmapSettings value={heatmapSettings} onChange={setHeatmapSettings} />
+              </div>
+              <Keyboard stats={stats.keys} settings={heatmapSettings} />
             </div>
           </>
         )}
