@@ -120,7 +120,6 @@ export function HeatmapSettings({ value, onChange, onResetStats }: Props) {
               </button>
             </div>
           )}
-          </div>
         </div>
       )}
     </div>
