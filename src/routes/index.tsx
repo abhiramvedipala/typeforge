@@ -299,6 +299,18 @@ function Index() {
                 onGenerate={newText}
               />
             )}
+            {mode === "smart" && (
+              <SmartDrill
+                stats={stats}
+                onText={(t, targets) => {
+                  activeSmartTargetsRef.current = targets;
+                  setSmartTargets(null);
+                  setText(t);
+                  setResult(null);
+                  setRestartTick((n) => n + 1);
+                }}
+              />
+            )}
 
             {/* Ghost-race toggle */}
             <div className="flex items-center gap-4 text-xs font-mono">
