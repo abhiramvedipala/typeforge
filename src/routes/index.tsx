@@ -54,24 +54,29 @@ import type { Mode, TimeOption, WordsOption } from "@/components/typing/types";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TypeForge — typing practice with AI-generated text" },
+      { title: "TypeForge — minimal typing practice" },
       {
         name: "description",
         content:
           "A minimal, distraction-free typing trainer. Time, words, quote and zen modes, plus AI-generated practice text, per-key drills, live keyboard heatmap and ghost replay.",
       },
-      { property: "og:title", content: "TypeForge — typing practice" },
+      { property: "og:title", content: "TypeForge — minimal typing practice" },
       {
         property: "og:description",
         content:
           "AI-generated practice text, per-key drills, live keyboard heatmap and race-your-ghost replay.",
       },
+      { property: "og:image", content: "/og-image.png" },
+      { name: "twitter:image", content: "/og-image.png" },
     ],
+    links: [{ rel: "canonical", href: "/" }],
   }),
   component: Index,
 });
 
 const GHOST_TOGGLE_KEY = "typeforge-ghost-enabled-v1";
+const HINT_DISMISSED_KEY = "typeforge-hint-dismissed-v1";
+
 
 function Index() {
   const [mode, setMode] = useState<Mode>("time");
