@@ -92,8 +92,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "TypeForge" },
+      { property: "og:image", content: "/og-image.png" },
+      { property: "og:image:width", content: "1216" },
+      { property: "og:image:height", content: "640" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "TypeForge — minimal typing practice" },
+      { name: "twitter:image", content: "/og-image.png" },
       {
         name: "twitter:description",
         content:
@@ -101,6 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     links: [
+
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     ],
