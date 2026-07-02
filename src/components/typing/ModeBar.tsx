@@ -21,7 +21,12 @@ export function ModeBar({
   setWordsValue,
 }: Props) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2 px-3 py-2 rounded-lg bg-[color:var(--type-surface)] border border-[color:var(--type-border)] text-sm">
+    <div
+      role="toolbar"
+      aria-label="Typing mode"
+      className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2 px-3 py-2 rounded-lg bg-[color:var(--type-surface)] border border-[color:var(--type-border)] text-sm max-w-full"
+    >
+
       <ModeBtn active={mode === "time"} onClick={() => setMode("time")}>time</ModeBtn>
       <ModeBtn active={mode === "words"} onClick={() => setMode("words")}>words</ModeBtn>
       <ModeBtn active={mode === "quote"} onClick={() => setMode("quote")}>quote</ModeBtn>
