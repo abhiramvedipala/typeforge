@@ -100,6 +100,8 @@ function Index() {
     useState<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
   const activeSmartTargetsRef = useRef<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
   const [heatmapSettings, setHeatmapSettings] = useState<HeatmapSettingsType>(DEFAULT_HEATMAP_SETTINGS);
+  const [showHint, setShowHint] = useState(false);
+
 
   const { user, loading: authLoading } = useAuth();
   const userIdRef = useRef<string | null>(null);
