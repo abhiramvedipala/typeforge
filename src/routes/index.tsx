@@ -311,6 +311,15 @@ function Index() {
     onKeystroke,
   });
 
+  // Time mode: keep the text effectively infinite by appending more words
+  // as the user approaches the end. Preserves input, stats, timer, ghost.
+  useEffect(() => {
+    if (mode !== "time" || engine.finished || !text) return;
+    if (text.length - engine.input.length < 80) {
+      setText((t) => t + " " + randomWords(60).join(" "));
+    }
+  }, [engine.input, text, mode, engine.finished]);
+
   // Ghost-replay live caret index (only when enabled, started, not finished, and best exists)
   useEffect(() => {
     if (!ghostEnabled || !bestForMode || !engine.started || engine.finished) {
