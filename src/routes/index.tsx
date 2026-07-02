@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
 import { useTypingEngine, type Keystroke, type TypingResult } from "@/hooks/use-typing-engine";
 import { TypingDisplay } from "@/components/typing/TypingDisplay";
 import { Results } from "@/components/typing/Results";
-import { ThemeSwitcher } from "@/components/typing/ThemeSwitcher";
+import { ThemeSwitcher, applyTheme, type ThemeId } from "@/components/typing/ThemeSwitcher";
 import { ModeBar } from "@/components/typing/ModeBar";
 import { AIPrompt } from "@/components/typing/AIPrompt";
 import { DrillSelector } from "@/components/typing/DrillSelector";
@@ -14,9 +14,12 @@ import { Keyboard } from "@/components/typing/Keyboard";
 import { HeatmapSettings } from "@/components/typing/HeatmapSettings";
 import { SoundToggle, useSoundProfile } from "@/components/typing/SoundToggle";
 import { SmartDrill } from "@/components/typing/SmartDrill";
+import { AccountMenu } from "@/components/typing/AccountMenu";
+import { useAuth } from "@/hooks/use-auth";
 import {
   DEFAULT_HEATMAP_SETTINGS,
   loadHeatmapSettings,
+  saveHeatmapSettings,
   type HeatmapSettings as HeatmapSettingsType,
 } from "@/lib/heatmap-settings";
 import { drillWords, randomQuote, randomWords } from "@/lib/words";
@@ -28,7 +31,7 @@ import {
   type StatsBundle,
   type TargetSnapshot,
 } from "@/lib/keystats";
-import { playKeySound } from "@/lib/sounds";
+import { playKeySound, saveSoundProfile } from "@/lib/sounds";
 import {
   getBest,
   ghostIndexAt,
@@ -37,6 +40,15 @@ import {
   setBest,
   type BestRun,
 } from "@/lib/ghost";
+import {
+  debounced,
+  fetchCloudSettings,
+  fetchCloudStats,
+  insertTestHistory,
+  mergeStats,
+  saveCloudSettings,
+  saveCloudStats,
+} from "@/lib/cloud-sync";
 import type { Mode, TimeOption, WordsOption } from "@/components/typing/types";
 
 export const Route = createFileRoute("/")({
