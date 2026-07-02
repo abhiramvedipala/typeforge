@@ -17,9 +17,22 @@ export function TypingDisplay({ text, input, ghostIdx }: Props) {
     height: number;
   } | null>(null);
 
-  const tokens = useMemo(() => {
-    const out: { char: string; index: number }[] = [];
-    for (let i = 0; i < text.length; i++) out.push({ char: text[i], index: i });
+  const words = useMemo(() => {
+    const out: { chars: { char: string; index: number }[]; isSpace: boolean }[] = [];
+    let i = 0;
+    while (i < text.length) {
+      if (text[i] === " ") {
+        out.push({ chars: [{ char: " ", index: i }], isSpace: true });
+        i++;
+      } else {
+        const group: { char: string; index: number }[] = [];
+        while (i < text.length && text[i] !== " ") {
+          group.push({ char: text[i], index: i });
+          i++;
+        }
+        out.push({ chars: group, isSpace: false });
+      }
+    }
     return out;
   }, [text]);
 
@@ -76,20 +89,33 @@ export function TypingDisplay({ text, input, ghostIdx }: Props) {
         style={{ transform: `translateY(${-scrollY}px)` }}
       >
         <div className="flex flex-wrap">
-          {tokens.map(({ char, index }) => {
-            let cls = "text-[color:var(--type-pending)]";
-            const typed = input[index];
-            if (typed !== undefined) {
-              if (typed === char) cls = "text-[color:var(--type-correct)]";
-              else
-                cls =
-                  char === " "
-                    ? "text-[color:var(--type-error)] underline decoration-[color:var(--type-error)]"
-                    : "text-[color:var(--type-error)]";
+          {words.map((word, wi) => {
+            const renderChar = ({ char, index }: { char: string; index: number }) => {
+              let cls = "text-[color:var(--type-pending)]";
+              const typed = input[index];
+              if (typed !== undefined) {
+                if (typed === char) cls = "text-[color:var(--type-correct)]";
+                else
+                  cls =
+                    char === " "
+                      ? "text-[color:var(--type-error)] underline decoration-[color:var(--type-error)]"
+                      : "text-[color:var(--type-error)]";
+              }
+              return (
+                <span key={index} data-i={index} className={cls} style={{ whiteSpace: "pre" }}>
+                  {char}
+                </span>
+              );
+            };
+            if (word.isSpace) {
+              return <span key={`s-${wi}`}>{word.chars.map(renderChar)}</span>;
             }
             return (
-              <span key={index} data-i={index} className={cls} style={{ whiteSpace: "pre" }}>
-                {char}
+              <span
+                key={`w-${wi}`}
+                style={{ display: "inline-block", whiteSpace: "nowrap" }}
+              >
+                {word.chars.map(renderChar)}
               </span>
             );
           })}
@@ -99,6 +125,7 @@ export function TypingDisplay({ text, input, ghostIdx }: Props) {
             </span>
           )}
         </div>
+
 
         {ghostStyle && (
           <span
