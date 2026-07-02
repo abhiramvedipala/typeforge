@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
 import { useTypingEngine, type Keystroke, type TypingResult } from "@/hooks/use-typing-engine";
 import { TypingDisplay } from "@/components/typing/TypingDisplay";
 import { Results } from "@/components/typing/Results";
-import { ThemeSwitcher } from "@/components/typing/ThemeSwitcher";
+import { ThemeSwitcher, applyTheme, type ThemeId } from "@/components/typing/ThemeSwitcher";
 import { ModeBar } from "@/components/typing/ModeBar";
 import { AIPrompt } from "@/components/typing/AIPrompt";
 import { DrillSelector } from "@/components/typing/DrillSelector";
@@ -14,9 +14,12 @@ import { Keyboard } from "@/components/typing/Keyboard";
 import { HeatmapSettings } from "@/components/typing/HeatmapSettings";
 import { SoundToggle, useSoundProfile } from "@/components/typing/SoundToggle";
 import { SmartDrill } from "@/components/typing/SmartDrill";
+import { AccountMenu } from "@/components/typing/AccountMenu";
+import { useAuth } from "@/hooks/use-auth";
 import {
   DEFAULT_HEATMAP_SETTINGS,
   loadHeatmapSettings,
+  saveHeatmapSettings,
   type HeatmapSettings as HeatmapSettingsType,
 } from "@/lib/heatmap-settings";
 import { drillWords, randomQuote, randomWords } from "@/lib/words";
@@ -28,7 +31,7 @@ import {
   type StatsBundle,
   type TargetSnapshot,
 } from "@/lib/keystats";
-import { playKeySound } from "@/lib/sounds";
+import { playKeySound, saveSoundProfile } from "@/lib/sounds";
 import {
   getBest,
   ghostIndexAt,
@@ -37,6 +40,15 @@ import {
   setBest,
   type BestRun,
 } from "@/lib/ghost";
+import {
+  debounced,
+  fetchCloudSettings,
+  fetchCloudStats,
+  insertTestHistory,
+  mergeStats,
+  saveCloudSettings,
+  saveCloudStats,
+} from "@/lib/cloud-sync";
 import type { Mode, TimeOption, WordsOption } from "@/components/typing/types";
 
 export const Route = createFileRoute("/")({
@@ -84,7 +96,11 @@ function Index() {
   const activeSmartTargetsRef = useRef<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
   const [heatmapSettings, setHeatmapSettings] = useState<HeatmapSettingsType>(DEFAULT_HEATMAP_SETTINGS);
 
-  // Hydrate persisted state
+  const { user, loading: authLoading } = useAuth();
+  const userIdRef = useRef<string | null>(null);
+  const hydratedFromCloudRef = useRef(false);
+
+  // Hydrate persisted state (localStorage — used always for guests, and as initial for signed-in until cloud loads)
   useEffect(() => {
     setStats(loadStats());
     setHeatmapSettings(loadHeatmapSettings());
@@ -93,6 +109,103 @@ function Index() {
       if (v === "1") setGhostEnabled(true);
     } catch {}
   }, []);
+
+  // Cloud hydrate on sign-in / clear on sign-out
+  useEffect(() => {
+    const uid = user?.id ?? null;
+    const prevUid = userIdRef.current;
+    userIdRef.current = uid;
+    if (!uid) {
+      hydratedFromCloudRef.current = false;
+      return;
+    }
+    if (prevUid === uid && hydratedFromCloudRef.current) return;
+    (async () => {
+      try {
+        const [cloudStats, cloudSettings] = await Promise.all([
+          fetchCloudStats(uid),
+          fetchCloudSettings(uid),
+        ]);
+        const localStats = loadStats();
+        let finalStats: StatsBundle;
+        if (cloudStats) {
+          const hasLocal = localStats.testCount > 0 || Object.keys(localStats.keys).length > 0;
+          const alreadyMerged = localStorage.getItem(`typeforge-merged-${uid}`) === "1";
+          if (hasLocal && !alreadyMerged) {
+            if (window.confirm("Merge your guest typing stats into your account?")) {
+              finalStats = mergeStats(cloudStats, localStats);
+              await saveCloudStats(uid, finalStats);
+              toast.success("guest stats merged");
+            } else {
+              finalStats = cloudStats;
+            }
+            localStorage.setItem(`typeforge-merged-${uid}`, "1");
+          } else {
+            finalStats = cloudStats;
+          }
+        } else {
+          // First-time cloud user — seed with whatever local has
+          finalStats = localStats;
+          if (localStats.testCount > 0 || Object.keys(localStats.keys).length > 0) {
+            await saveCloudStats(uid, finalStats);
+          }
+        }
+        setStats(finalStats);
+        saveStats(finalStats);
+
+        if (cloudSettings) {
+          if (cloudSettings.theme) applyTheme(cloudSettings.theme as ThemeId);
+          if (cloudSettings.sound_profile) {
+            setSoundProfile(cloudSettings.sound_profile as ReturnType<typeof useSoundProfile>[0]);
+            saveSoundProfile(cloudSettings.sound_profile as ReturnType<typeof useSoundProfile>[0]);
+          }
+          if (
+            cloudSettings.heatmap_red != null &&
+            cloudSettings.heatmap_yellow != null &&
+            cloudSettings.heatmap_accuracy_weight != null
+          ) {
+            const hs: HeatmapSettingsType = {
+              redThreshold: Number(cloudSettings.heatmap_red),
+              yellowThreshold: Number(cloudSettings.heatmap_yellow),
+              accuracyWeight: Number(cloudSettings.heatmap_accuracy_weight),
+            };
+            setHeatmapSettings(hs);
+            saveHeatmapSettings(hs);
+          }
+          if (typeof cloudSettings.ghost_enabled === "boolean") {
+            setGhostEnabled(cloudSettings.ghost_enabled);
+          }
+        }
+        hydratedFromCloudRef.current = true;
+      } catch (e) {
+        console.error("cloud sync failed", e);
+        toast.error("couldn't sync from cloud");
+      }
+    })();
+  }, [user, setSoundProfile]);
+
+  // Debounced settings sync when signed in
+  useEffect(() => {
+    const uid = userIdRef.current;
+    if (!uid || !hydratedFromCloudRef.current) return;
+    const theme =
+      typeof document !== "undefined"
+        ? (Array.from(document.documentElement.classList)
+            .find((c) => c.startsWith("theme-"))
+            ?.replace("theme-", "") ?? null)
+        : null;
+    debounced(`settings-${uid}`, 600, () => {
+      saveCloudSettings(uid, {
+        theme,
+        sound_profile: soundProfile,
+        heatmap_red: heatmapSettings.redThreshold,
+        heatmap_yellow: heatmapSettings.yellowThreshold,
+        heatmap_accuracy_weight: heatmapSettings.accuracyWeight,
+        ghost_enabled: ghostEnabled,
+      }).catch(() => {});
+    });
+  }, [soundProfile, heatmapSettings, ghostEnabled, user]);
+
 
   useEffect(() => {
     setBestForMode(getBest(ghostKey(mode, timeValue, wordsValue)));
@@ -138,11 +251,25 @@ function Index() {
     (r: TypingResult) => {
       setResult(r);
       // Ingest per-key + bigram stats
+      let mergedStats: StatsBundle | null = null;
       setStats((prev) => {
         const merged = ingestRun(prev, r.keystrokes);
         saveStats(merged);
+        mergedStats = merged;
         return merged;
       });
+
+      // Cloud sync when signed in
+      const uid = userIdRef.current;
+      if (uid) {
+        if (mergedStats) {
+          const snapshot = mergedStats;
+          debounced(`stats-${uid}`, 800, () => {
+            saveCloudStats(uid, snapshot).catch(() => {});
+          });
+        }
+        insertTestHistory(uid, mode, r).catch(() => {});
+      }
 
       // Snapshot of smart-drill targets recorded at generation time
       setSmartTargets(activeSmartTargetsRef.current);
@@ -273,6 +400,7 @@ function Index() {
         <div className="flex items-center gap-4 flex-wrap justify-end">
           <SoundToggle value={soundProfile} onChange={setSoundProfile} />
           <ThemeSwitcher />
+          <AccountMenu user={user} loading={authLoading} />
         </div>
       </header>
 
@@ -383,7 +511,10 @@ function Index() {
                   onChange={setHeatmapSettings}
                   onResetStats={() => {
                     resetStats();
-                    setStats({ keys: {}, bigrams: {}, testCount: 0 });
+                    const empty: StatsBundle = { keys: {}, bigrams: {}, testCount: 0 };
+                    setStats(empty);
+                    const uid = userIdRef.current;
+                    if (uid) saveCloudStats(uid, empty).catch(() => {});
                   }}
                 />
               </div>
