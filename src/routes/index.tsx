@@ -251,11 +251,25 @@ function Index() {
     (r: TypingResult) => {
       setResult(r);
       // Ingest per-key + bigram stats
+      let mergedStats: StatsBundle | null = null;
       setStats((prev) => {
         const merged = ingestRun(prev, r.keystrokes);
         saveStats(merged);
+        mergedStats = merged;
         return merged;
       });
+
+      // Cloud sync when signed in
+      const uid = userIdRef.current;
+      if (uid) {
+        if (mergedStats) {
+          const snapshot = mergedStats;
+          debounced(`stats-${uid}`, 800, () => {
+            saveCloudStats(uid, snapshot).catch(() => {});
+          });
+        }
+        insertTestHistory(uid, mode, r).catch(() => {});
+      }
 
       // Snapshot of smart-drill targets recorded at generation time
       setSmartTargets(activeSmartTargetsRef.current);
