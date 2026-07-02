@@ -400,6 +400,7 @@ function Index() {
         <div className="flex items-center gap-4 flex-wrap justify-end">
           <SoundToggle value={soundProfile} onChange={setSoundProfile} />
           <ThemeSwitcher />
+          <AccountMenu user={user} loading={authLoading} />
         </div>
       </header>
 
