@@ -114,8 +114,10 @@ function Index() {
     try {
       const v = localStorage.getItem(GHOST_TOGGLE_KEY);
       if (v === "1") setGhostEnabled(true);
+      if (localStorage.getItem(HINT_DISMISSED_KEY) !== "1") setShowHint(true);
     } catch {}
   }, []);
+
 
   // Cloud hydrate on sign-in / clear on sign-out
   useEffect(() => {
