@@ -511,7 +511,10 @@ function Index() {
                   onChange={setHeatmapSettings}
                   onResetStats={() => {
                     resetStats();
-                    setStats({ keys: {}, bigrams: {}, testCount: 0 });
+                    const empty: StatsBundle = { keys: {}, bigrams: {}, testCount: 0 };
+                    setStats(empty);
+                    const uid = userIdRef.current;
+                    if (uid) saveCloudStats(uid, empty).catch(() => {});
                   }}
                 />
               </div>
