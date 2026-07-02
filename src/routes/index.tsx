@@ -96,7 +96,11 @@ function Index() {
   const activeSmartTargetsRef = useRef<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
   const [heatmapSettings, setHeatmapSettings] = useState<HeatmapSettingsType>(DEFAULT_HEATMAP_SETTINGS);
 
-  // Hydrate persisted state
+  const { user, loading: authLoading } = useAuth();
+  const userIdRef = useRef<string | null>(null);
+  const hydratedFromCloudRef = useRef(false);
+
+  // Hydrate persisted state (localStorage — used always for guests, and as initial for signed-in until cloud loads)
   useEffect(() => {
     setStats(loadStats());
     setHeatmapSettings(loadHeatmapSettings());
@@ -105,6 +109,103 @@ function Index() {
       if (v === "1") setGhostEnabled(true);
     } catch {}
   }, []);
+
+  // Cloud hydrate on sign-in / clear on sign-out
+  useEffect(() => {
+    const uid = user?.id ?? null;
+    const prevUid = userIdRef.current;
+    userIdRef.current = uid;
+    if (!uid) {
+      hydratedFromCloudRef.current = false;
+      return;
+    }
+    if (prevUid === uid && hydratedFromCloudRef.current) return;
+    (async () => {
+      try {
+        const [cloudStats, cloudSettings] = await Promise.all([
+          fetchCloudStats(uid),
+          fetchCloudSettings(uid),
+        ]);
+        const localStats = loadStats();
+        let finalStats: StatsBundle;
+        if (cloudStats) {
+          const hasLocal = localStats.testCount > 0 || Object.keys(localStats.keys).length > 0;
+          const alreadyMerged = localStorage.getItem(`typeforge-merged-${uid}`) === "1";
+          if (hasLocal && !alreadyMerged) {
+            if (window.confirm("Merge your guest typing stats into your account?")) {
+              finalStats = mergeStats(cloudStats, localStats);
+              await saveCloudStats(uid, finalStats);
+              toast.success("guest stats merged");
+            } else {
+              finalStats = cloudStats;
+            }
+            localStorage.setItem(`typeforge-merged-${uid}`, "1");
+          } else {
+            finalStats = cloudStats;
+          }
+        } else {
+          // First-time cloud user — seed with whatever local has
+          finalStats = localStats;
+          if (localStats.testCount > 0 || Object.keys(localStats.keys).length > 0) {
+            await saveCloudStats(uid, finalStats);
+          }
+        }
+        setStats(finalStats);
+        saveStats(finalStats);
+
+        if (cloudSettings) {
+          if (cloudSettings.theme) applyTheme(cloudSettings.theme as ThemeId);
+          if (cloudSettings.sound_profile) {
+            setSoundProfile(cloudSettings.sound_profile as ReturnType<typeof useSoundProfile>[0]);
+            saveSoundProfile(cloudSettings.sound_profile as ReturnType<typeof useSoundProfile>[0]);
+          }
+          if (
+            cloudSettings.heatmap_red != null &&
+            cloudSettings.heatmap_yellow != null &&
+            cloudSettings.heatmap_accuracy_weight != null
+          ) {
+            const hs: HeatmapSettingsType = {
+              redThreshold: Number(cloudSettings.heatmap_red),
+              yellowThreshold: Number(cloudSettings.heatmap_yellow),
+              accuracyWeight: Number(cloudSettings.heatmap_accuracy_weight),
+            };
+            setHeatmapSettings(hs);
+            saveHeatmapSettings(hs);
+          }
+          if (typeof cloudSettings.ghost_enabled === "boolean") {
+            setGhostEnabled(cloudSettings.ghost_enabled);
+          }
+        }
+        hydratedFromCloudRef.current = true;
+      } catch (e) {
+        console.error("cloud sync failed", e);
+        toast.error("couldn't sync from cloud");
+      }
+    })();
+  }, [user, setSoundProfile]);
+
+  // Debounced settings sync when signed in
+  useEffect(() => {
+    const uid = userIdRef.current;
+    if (!uid || !hydratedFromCloudRef.current) return;
+    const theme =
+      typeof document !== "undefined"
+        ? (Array.from(document.documentElement.classList)
+            .find((c) => c.startsWith("theme-"))
+            ?.replace("theme-", "") ?? null)
+        : null;
+    debounced(`settings-${uid}`, 600, () => {
+      saveCloudSettings(uid, {
+        theme,
+        sound_profile: soundProfile,
+        heatmap_red: heatmapSettings.redThreshold,
+        heatmap_yellow: heatmapSettings.yellowThreshold,
+        heatmap_accuracy_weight: heatmapSettings.accuracyWeight,
+        ghost_enabled: ghostEnabled,
+      }).catch(() => {});
+    });
+  }, [soundProfile, heatmapSettings, ghostEnabled, user]);
+
 
   useEffect(() => {
     setBestForMode(getBest(ghostKey(mode, timeValue, wordsValue)));
