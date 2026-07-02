@@ -14,7 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      test_history: {
+        Row: {
+          accuracy: number
+          correct_chars: number
+          created_at: string
+          duration: number
+          id: string
+          incorrect_chars: number
+          mode: string
+          raw_wpm: number
+          user_id: string
+          wpm: number
+        }
+        Insert: {
+          accuracy: number
+          correct_chars?: number
+          created_at?: string
+          duration: number
+          id?: string
+          incorrect_chars?: number
+          mode: string
+          raw_wpm: number
+          user_id: string
+          wpm: number
+        }
+        Update: {
+          accuracy?: number
+          correct_chars?: number
+          created_at?: string
+          duration?: number
+          id?: string
+          incorrect_chars?: number
+          mode?: string
+          raw_wpm?: number
+          user_id?: string
+          wpm?: number
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          ghost_enabled: boolean | null
+          heatmap_accuracy_weight: number | null
+          heatmap_red: number | null
+          heatmap_yellow: number | null
+          sound_profile: string | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ghost_enabled?: boolean | null
+          heatmap_accuracy_weight?: number | null
+          heatmap_red?: number | null
+          heatmap_yellow?: number | null
+          sound_profile?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ghost_enabled?: boolean | null
+          heatmap_accuracy_weight?: number | null
+          heatmap_red?: number | null
+          heatmap_yellow?: number | null
+          sound_profile?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          bigrams: Json
+          keys: Json
+          test_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bigrams?: Json
+          keys?: Json
+          test_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bigrams?: Json
+          keys?: Json
+          test_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
