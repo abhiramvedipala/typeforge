@@ -77,22 +77,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-    ],
-    links: [
+      { name: "theme-color", content: "#0f1115" },
+      { title: "TypeForge — minimal typing practice" },
       {
-        rel: "stylesheet",
-        href: appCss,
+        name: "description",
+        content:
+          "A minimal, distraction-free typing trainer with AI-generated text, per-key drills, a live keyboard heatmap, ghost replay, and adaptive Smart Drills.",
+      },
+      { property: "og:title", content: "TypeForge — minimal typing practice" },
+      {
+        property: "og:description",
+        content:
+          "Minimal, distraction-free typing practice with AI-generated text, live heatmap, ghost replay and Smart Drills.",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "TypeForge" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "TypeForge — minimal typing practice" },
+      {
+        name: "twitter:description",
+        content:
+          "Minimal typing practice with AI text, heatmap, ghost replay and Smart Drills.",
       },
     ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+    ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,

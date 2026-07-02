@@ -39,15 +39,18 @@ export function ThemeSwitcher() {
   }, []);
 
   return (
-    <div className="flex items-center gap-1 text-xs">
+    <div role="radiogroup" aria-label="Theme" className="flex items-center gap-1 text-xs flex-wrap justify-end">
       {THEMES.map((t) => (
         <button
           key={t.id}
+          role="radio"
+          aria-checked={theme === t.id}
+          aria-label={`Theme: ${t.label}`}
           onClick={() => {
             setTheme(t.id);
             applyTheme(t.id);
           }}
-          className={`px-2 py-1 rounded transition ${
+          className={`px-2 py-1 rounded transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--type-accent)] ${
             theme === t.id
               ? "text-[color:var(--type-accent)] bg-[color:var(--type-surface)]"
               : "text-[color:var(--type-muted)] hover:text-[color:var(--type-text)]"
@@ -59,3 +62,4 @@ export function ThemeSwitcher() {
     </div>
   );
 }
+

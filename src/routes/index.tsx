@@ -54,24 +54,29 @@ import type { Mode, TimeOption, WordsOption } from "@/components/typing/types";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TypeForge — typing practice with AI-generated text" },
+      { title: "TypeForge — minimal typing practice" },
       {
         name: "description",
         content:
           "A minimal, distraction-free typing trainer. Time, words, quote and zen modes, plus AI-generated practice text, per-key drills, live keyboard heatmap and ghost replay.",
       },
-      { property: "og:title", content: "TypeForge — typing practice" },
+      { property: "og:title", content: "TypeForge — minimal typing practice" },
       {
         property: "og:description",
         content:
           "AI-generated practice text, per-key drills, live keyboard heatmap and race-your-ghost replay.",
       },
+      { property: "og:image", content: "/og-image.png" },
+      { name: "twitter:image", content: "/og-image.png" },
     ],
+    links: [{ rel: "canonical", href: "/" }],
   }),
   component: Index,
 });
 
 const GHOST_TOGGLE_KEY = "typeforge-ghost-enabled-v1";
+const HINT_DISMISSED_KEY = "typeforge-hint-dismissed-v1";
+
 
 function Index() {
   const [mode, setMode] = useState<Mode>("time");
@@ -95,6 +100,8 @@ function Index() {
     useState<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
   const activeSmartTargetsRef = useRef<{ keys: string[]; bigrams: string[]; snapshot: TargetSnapshot } | null>(null);
   const [heatmapSettings, setHeatmapSettings] = useState<HeatmapSettingsType>(DEFAULT_HEATMAP_SETTINGS);
+  const [showHint, setShowHint] = useState(false);
+
 
   const { user, loading: authLoading } = useAuth();
   const userIdRef = useRef<string | null>(null);
@@ -107,8 +114,10 @@ function Index() {
     try {
       const v = localStorage.getItem(GHOST_TOGGLE_KEY);
       if (v === "1") setGhostEnabled(true);
+      if (localStorage.getItem(HINT_DISMISSED_KEY) !== "1") setShowHint(true);
     } catch {}
   }, []);
+
 
   // Cloud hydrate on sign-in / clear on sign-out
   useEffect(() => {
@@ -388,8 +397,8 @@ function Index() {
   return (
     <div className="min-h-screen bg-[color:var(--type-bg)] text-[color:var(--type-text)] flex flex-col">
       <Toaster position="top-center" />
-      <header className="flex items-center justify-between gap-4 px-6 py-4 max-w-6xl mx-auto w-full">
-        <div className="flex items-baseline gap-2">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 sm:px-6 py-4 max-w-6xl mx-auto w-full">
+        <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-mono text-xl font-bold text-[color:var(--type-accent)]">
             type<span className="text-[color:var(--type-text)]">forge</span>
           </span>
@@ -397,12 +406,40 @@ function Index() {
             // typing practice
           </span>
         </div>
-        <div className="flex items-center gap-4 flex-wrap justify-end">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
           <SoundToggle value={soundProfile} onChange={setSoundProfile} />
           <ThemeSwitcher />
           <AccountMenu user={user} loading={authLoading} />
         </div>
       </header>
+
+      {showHint && !result && (
+        <div
+          role="status"
+          className="mx-auto w-full max-w-6xl px-4 sm:px-6"
+        >
+          <div className="flex items-center justify-between gap-3 rounded-md border border-[color:var(--type-border)] bg-[color:var(--type-surface)]/60 px-3 py-1.5 font-mono text-[11px] text-[color:var(--type-muted)]">
+            <span className="truncate">
+              tip · just start typing to begin ·{" "}
+              <span className="text-[color:var(--type-text)]">tab</span> +{" "}
+              <span className="text-[color:var(--type-text)]">enter</span> to restart
+            </span>
+            <button
+              onClick={() => {
+                setShowHint(false);
+                try {
+                  localStorage.setItem(HINT_DISMISSED_KEY, "1");
+                } catch {}
+              }}
+              aria-label="Dismiss hint"
+              className="shrink-0 text-[color:var(--type-muted)] hover:text-[color:var(--type-accent)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--type-accent)] rounded px-1"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 gap-6 w-full">
         {!result && (
@@ -504,7 +541,7 @@ function Index() {
             )}
 
             {/* Heatmap */}
-            <div className="mt-4">
+            <div className="mt-4 w-full max-w-3xl mx-auto">
               <div className="flex justify-end mb-2">
                 <HeatmapSettings
                   value={heatmapSettings}
@@ -518,8 +555,11 @@ function Index() {
                   }}
                 />
               </div>
-              <Keyboard stats={stats.keys} settings={heatmapSettings} />
+              <div className="overflow-x-auto -mx-4 px-4 pb-1">
+                <Keyboard stats={stats.keys} settings={heatmapSettings} />
+              </div>
             </div>
+
           </>
         )}
 

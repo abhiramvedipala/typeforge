@@ -21,7 +21,12 @@ export function ModeBar({
   setWordsValue,
 }: Props) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2 px-3 py-2 rounded-lg bg-[color:var(--type-surface)] border border-[color:var(--type-border)] text-sm">
+    <div
+      role="toolbar"
+      aria-label="Typing mode"
+      className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2 px-3 py-2 rounded-lg bg-[color:var(--type-surface)] border border-[color:var(--type-border)] text-sm max-w-full"
+    >
+
       <ModeBtn active={mode === "time"} onClick={() => setMode("time")}>time</ModeBtn>
       <ModeBtn active={mode === "words"} onClick={() => setMode("words")}>words</ModeBtn>
       <ModeBtn active={mode === "quote"} onClick={() => setMode("quote")}>quote</ModeBtn>
@@ -61,7 +66,8 @@ function ModeBtn({
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-1 rounded transition font-mono ${
+      aria-pressed={!!active}
+      className={`px-2 py-1 rounded transition font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--type-accent)] ${
         active
           ? "text-[color:var(--type-accent)]"
           : "text-[color:var(--type-muted)] hover:text-[color:var(--type-text)]"
@@ -71,3 +77,4 @@ function ModeBtn({
     </button>
   );
 }
+
