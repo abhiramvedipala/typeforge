@@ -397,8 +397,8 @@ function Index() {
   return (
     <div className="min-h-screen bg-[color:var(--type-bg)] text-[color:var(--type-text)] flex flex-col">
       <Toaster position="top-center" />
-      <header className="flex items-center justify-between gap-4 px-6 py-4 max-w-6xl mx-auto w-full">
-        <div className="flex items-baseline gap-2">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 sm:px-6 py-4 max-w-6xl mx-auto w-full">
+        <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-mono text-xl font-bold text-[color:var(--type-accent)]">
             type<span className="text-[color:var(--type-text)]">forge</span>
           </span>
@@ -406,12 +406,40 @@ function Index() {
             // typing practice
           </span>
         </div>
-        <div className="flex items-center gap-4 flex-wrap justify-end">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
           <SoundToggle value={soundProfile} onChange={setSoundProfile} />
           <ThemeSwitcher />
           <AccountMenu user={user} loading={authLoading} />
         </div>
       </header>
+
+      {showHint && !result && (
+        <div
+          role="status"
+          className="mx-auto w-full max-w-6xl px-4 sm:px-6"
+        >
+          <div className="flex items-center justify-between gap-3 rounded-md border border-[color:var(--type-border)] bg-[color:var(--type-surface)]/60 px-3 py-1.5 font-mono text-[11px] text-[color:var(--type-muted)]">
+            <span className="truncate">
+              tip · just start typing to begin ·{" "}
+              <span className="text-[color:var(--type-text)]">tab</span> +{" "}
+              <span className="text-[color:var(--type-text)]">enter</span> to restart
+            </span>
+            <button
+              onClick={() => {
+                setShowHint(false);
+                try {
+                  localStorage.setItem(HINT_DISMISSED_KEY, "1");
+                } catch {}
+              }}
+              aria-label="Dismiss hint"
+              className="shrink-0 text-[color:var(--type-muted)] hover:text-[color:var(--type-accent)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--type-accent)] rounded px-1"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 gap-6 w-full">
         {!result && (
