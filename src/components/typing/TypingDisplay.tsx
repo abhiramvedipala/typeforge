@@ -17,9 +17,22 @@ export function TypingDisplay({ text, input, ghostIdx }: Props) {
     height: number;
   } | null>(null);
 
-  const tokens = useMemo(() => {
-    const out: { char: string; index: number }[] = [];
-    for (let i = 0; i < text.length; i++) out.push({ char: text[i], index: i });
+  const words = useMemo(() => {
+    const out: { chars: { char: string; index: number }[]; isSpace: boolean }[] = [];
+    let i = 0;
+    while (i < text.length) {
+      if (text[i] === " ") {
+        out.push({ chars: [{ char: " ", index: i }], isSpace: true });
+        i++;
+      } else {
+        const group: { char: string; index: number }[] = [];
+        while (i < text.length && text[i] !== " ") {
+          group.push({ char: text[i], index: i });
+          i++;
+        }
+        out.push({ chars: group, isSpace: false });
+      }
+    }
     return out;
   }, [text]);
 
