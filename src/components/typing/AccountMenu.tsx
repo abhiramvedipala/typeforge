@@ -40,9 +40,13 @@ export function AccountMenu({ user, loading }: Props) {
     <div className="relative">
       <button
         onClick={() => setMenu((m) => !m)}
-        className="flex items-center gap-2 text-xs font-mono text-[color:var(--type-muted)] hover:text-[color:var(--type-text)] transition"
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        aria-label={`Account menu for ${label}`}
+        className="flex items-center gap-2 text-xs font-mono text-[color:var(--type-muted)] hover:text-[color:var(--type-text)] transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--type-accent)] rounded"
         title={label}
       >
+
         {avatar ? (
           <img src={avatar} alt="" className="w-6 h-6 rounded-full" />
         ) : (
