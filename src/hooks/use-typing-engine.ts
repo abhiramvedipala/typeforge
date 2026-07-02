@@ -64,8 +64,15 @@ export function useTypingEngine({ text, timeLimit, zen, onComplete, onKeystroke 
     incorrectKeystrokesRef.current = 0;
   }, []);
 
+  const prevTextRef = useRef<string>("");
   useEffect(() => {
-    reset();
+    // Only reset when the text is genuinely swapped (restart / new prompt),
+    // not when it is extended (e.g. time-mode appending more words mid-test).
+    const prev = prevTextRef.current;
+    if (!text.startsWith(prev)) {
+      reset();
+    }
+    prevTextRef.current = text;
   }, [text, reset]);
 
   const computeStats = useCallback(
