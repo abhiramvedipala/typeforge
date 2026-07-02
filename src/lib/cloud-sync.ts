@@ -28,16 +28,15 @@ export async function fetchCloudStats(userId: string): Promise<StatsBundle | nul
 }
 
 export async function saveCloudStats(userId: string, bundle: StatsBundle): Promise<void> {
-  await supabase.from("user_stats").upsert(
-    {
-      user_id: userId,
-      keys: bundle.keys as unknown as Record<string, unknown>,
-      bigrams: bundle.bigrams as unknown as Record<string, unknown>,
-      test_count: bundle.testCount,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
+  const payload = {
+    user_id: userId,
+    keys: bundle.keys,
+    bigrams: bundle.bigrams,
+    test_count: bundle.testCount,
+    updated_at: new Date().toISOString(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+  await supabase.from("user_stats").upsert(payload, { onConflict: "user_id" });
 }
 
 export async function fetchCloudSettings(userId: string): Promise<CloudSettings | null> {
