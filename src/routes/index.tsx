@@ -541,7 +541,7 @@ function Index() {
             )}
 
             {/* Heatmap */}
-            <div className="mt-4">
+            <div className="mt-4 w-full max-w-3xl mx-auto">
               <div className="flex justify-end mb-2">
                 <HeatmapSettings
                   value={heatmapSettings}
@@ -555,8 +555,11 @@ function Index() {
                   }}
                 />
               </div>
-              <Keyboard stats={stats.keys} settings={heatmapSettings} />
+              <div className="overflow-x-auto -mx-4 px-4 pb-1">
+                <Keyboard stats={stats.keys} settings={heatmapSettings} />
+              </div>
             </div>
+
           </>
         )}
 
