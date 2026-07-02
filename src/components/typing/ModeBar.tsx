@@ -66,7 +66,8 @@ function ModeBtn({
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-1 rounded transition font-mono ${
+      aria-pressed={!!active}
+      className={`px-2 py-1 rounded transition font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--type-accent)] ${
         active
           ? "text-[color:var(--type-accent)]"
           : "text-[color:var(--type-muted)] hover:text-[color:var(--type-text)]"
@@ -76,3 +77,4 @@ function ModeBtn({
     </button>
   );
 }
+
