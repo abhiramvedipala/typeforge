@@ -21,8 +21,8 @@ export async function fetchCloudStats(userId: string): Promise<StatsBundle | nul
     .maybeSingle();
   if (error || !data) return null;
   return {
-    keys: (data.keys as StatsBundle["keys"]) ?? {},
-    bigrams: (data.bigrams as StatsBundle["bigrams"]) ?? {},
+    keys: (data.keys as unknown as StatsBundle["keys"]) ?? {},
+    bigrams: (data.bigrams as unknown as StatsBundle["bigrams"]) ?? {},
     testCount: data.test_count ?? 0,
   };
 }
@@ -31,8 +31,8 @@ export async function saveCloudStats(userId: string, bundle: StatsBundle): Promi
   await supabase.from("user_stats").upsert(
     {
       user_id: userId,
-      keys: bundle.keys,
-      bigrams: bundle.bigrams,
+      keys: bundle.keys as unknown as Record<string, unknown>,
+      bigrams: bundle.bigrams as unknown as Record<string, unknown>,
       test_count: bundle.testCount,
       updated_at: new Date().toISOString(),
     },
