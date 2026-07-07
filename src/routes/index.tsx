@@ -15,6 +15,7 @@ import { HeatmapSettings } from "@/components/typing/HeatmapSettings";
 import { SoundToggle, useSoundProfile } from "@/components/typing/SoundToggle";
 import { SmartDrill } from "@/components/typing/SmartDrill";
 import { AccountMenu } from "@/components/typing/AccountMenu";
+import { GitHubStatus } from "@/components/typing/GitHubStatus";
 import { useAuth } from "@/hooks/use-auth";
 import {
   DEFAULT_HEATMAP_SETTINGS,
@@ -418,6 +419,7 @@ function Index() {
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
           <SoundToggle value={soundProfile} onChange={setSoundProfile} />
           <ThemeSwitcher />
+          <GitHubStatus />
           <AccountMenu user={user} loading={authLoading} />
         </div>
       </header>
