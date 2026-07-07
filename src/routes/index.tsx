@@ -419,6 +419,7 @@ function Index() {
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
           <SoundToggle value={soundProfile} onChange={setSoundProfile} />
           <ThemeSwitcher />
+          <GitHubStatus />
           <AccountMenu user={user} loading={authLoading} />
         </div>
       </header>
