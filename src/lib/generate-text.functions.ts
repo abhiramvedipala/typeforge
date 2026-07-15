@@ -68,9 +68,10 @@ export const generateSmartDrillText = createServerFn({ method: "POST" })
         "You generate natural English prose for typing practice. Output ONLY the practice text — no preamble, no quotes, no markdown, no titles, no explanations. Use plain ASCII punctuation only (no smart quotes, em-dashes, or special characters). The text MUST read like real coherent English sentences a person would actually write — not nonsense, not a list of words, not letter soup.",
       prompt:
         `Write 110-150 words of coherent English prose suitable for typing practice. ` +
-        `Weight the vocabulary so the following trouble letters appear noticeably more often than in normal English (without being absurd): ${keyList}. ` +
-        `Also include these letter pairs (bigrams) more often than usual, embedded naturally inside real words: ${bgList}. ` +
-        `Do NOT produce text made only of these letters. Do NOT list words. Write 4-7 real sentences that flow naturally. Keep punctuation simple: periods, commas, apostrophes only.`,
+        `Heavily weight the vocabulary toward these trouble letters: ${keyList}. ` +
+        `Aim for MOST words (roughly 80%+) to contain at least one of those letters. ` +
+        `Also include these letter pairs (bigrams) frequently, embedded naturally inside real words: ${bgList}. ` +
+        `Do NOT produce text made only of these letters, do NOT list words, and do NOT force nonsense. Write 4-7 real sentences that flow naturally. Keep punctuation simple: periods, commas, apostrophes only.`,
     });
 
     return { text: sanitize(text) };
