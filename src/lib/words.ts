@@ -37,44 +37,116 @@ export function randomQuote(): string {
   return QUOTES[Math.floor(Math.random() * QUOTES.length)];
 }
 
-// Build a pseudo-word using only the given letters. Length 2-7, weighted natural.
+import ENGLISH_WORDS from "an-array-of-english-words";
+
+const VOWELS = new Set(["a", "e", "i", "o", "u", "y"]);
+
+// Precompute a pool of common-ish English words, lowercased, length 2-8.
+// This gives ~90k real words to filter against — enough that most drill
+// letter sets (even small ones) yield a healthy pool of pronounceable words.
+const DRILL_DICT: readonly string[] = (() => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const w of ENGLISH_WORDS as readonly string[]) {
+    if (w.length < 2 || w.length > 8) continue;
+    if (!/^[a-z]+$/.test(w)) continue;
+    if (seen.has(w)) continue;
+    seen.add(w);
+    out.push(w);
+  }
+  return out;
+})();
+
+// Build a pronounceable pseudo-word using only the given letters.
+// Alternates vowels and consonants where possible; falls back to short
+// rhythmic chunks for consonant-only sets.
 function pseudoWord(letters: string[]): string {
   if (letters.length === 0) return "";
-  // Length distribution favouring 3-5.
-  const lengths = [2, 3, 3, 4, 4, 4, 5, 5, 6, 7];
-  const len = lengths[Math.floor(Math.random() * lengths.length)];
+  const vowels = letters.filter((l) => VOWELS.has(l));
+  const consonants = letters.filter((l) => !VOWELS.has(l));
+
+  // No vowels at all — emit short 2-4 letter consonant burst, no repeats 3x.
+  if (vowels.length === 0) {
+    const len = 2 + Math.floor(Math.random() * 3); // 2-4
+    let out = "";
+    let last = "";
+    let run = 0;
+    for (let i = 0; i < len; i++) {
+      let ch = consonants[Math.floor(Math.random() * consonants.length)];
+      let guard = 0;
+      while (consonants.length > 1 && ch === last && run >= 1 && guard++ < 6) {
+        ch = consonants[Math.floor(Math.random() * consonants.length)];
+      }
+      run = ch === last ? run + 1 : 0;
+      last = ch;
+      out += ch;
+    }
+    return out;
+  }
+
+  // No consonants — just vowels; short chunk.
+  if (consonants.length === 0) {
+    const len = 2 + Math.floor(Math.random() * 3);
+    let out = "";
+    for (let i = 0; i < len; i++) {
+      out += vowels[Math.floor(Math.random() * vowels.length)];
+    }
+    return out;
+  }
+
+  // Mixed: alternate C/V with occasional doubles. Length 3-6.
+  const len = 3 + Math.floor(Math.random() * 4);
+  const startWithVowel = Math.random() < 0.35;
   let out = "";
+  let wantVowel = startWithVowel;
   let last = "";
+  let consonantRun = 0;
   for (let i = 0; i < len; i++) {
-    let ch = letters[Math.floor(Math.random() * letters.length)];
-    // Avoid same char 3x in a row when we have more than one letter available.
-    if (letters.length > 1 && out.length >= 2 && out[out.length - 1] === last && ch === last) {
-      ch = letters[Math.floor(Math.random() * letters.length)];
+    const pool = wantVowel ? vowels : consonants;
+    let ch = pool[Math.floor(Math.random() * pool.length)];
+    // Avoid same char twice in a row (single doubles like "ll" happen only ~15%).
+    let guard = 0;
+    while (pool.length > 1 && ch === last && Math.random() > 0.15 && guard++ < 4) {
+      ch = pool[Math.floor(Math.random() * pool.length)];
+    }
+    // Never 3+ consonants in a row.
+    if (!wantVowel) {
+      consonantRun++;
+      if (consonantRun >= 2 && vowels.length > 0) {
+        wantVowel = true;
+        ch = vowels[Math.floor(Math.random() * vowels.length)];
+        consonantRun = 0;
+      }
+    } else {
+      consonantRun = 0;
     }
     out += ch;
     last = ch;
+    // Alternate most of the time, occasionally repeat class.
+    wantVowel = Math.random() < 0.8 ? !wantVowel : wantVowel;
   }
   return out;
 }
 
 // Generate words composed ONLY of the chosen drill letters.
-// Prefers real common words that fit the set; pads with pseudo-words when the
-// real-word pool is too small (typical for small sets like "asd" or "qz").
+// Prefers real English words that fit the set (aiming for ~70% real when
+// possible); pads with pronounceable pseudo-words for variety and coverage.
 export function drillWords(letters: string[], count: number): string[] {
   const normalized = [...new Set(letters.map((l) => l.toLowerCase()).filter(Boolean))];
   const set = new Set(normalized);
   if (set.size === 0) return randomWords(count);
 
-  const REAL_MIN = 15;
-  const realPool = COMMON_WORDS.filter(
-    (w) => w.length > 0 && [...w.toLowerCase()].every((ch) => set.has(ch)),
-  );
+  const realPool = DRILL_DICT.filter((w) => {
+    for (let i = 0; i < w.length; i++) if (!set.has(w[i])) return false;
+    return true;
+  });
 
   const out: string[] = [];
+  const REAL_MIN = 10;
   if (realPool.length >= REAL_MIN) {
-    // Mix mostly real words with a sprinkle of pseudo-words for length variety.
+    // ~70% real words, ~30% pseudo-word fillers.
     for (let i = 0; i < count; i++) {
-      const usePseudo = Math.random() < 0.2;
+      const usePseudo = Math.random() < 0.3;
       out.push(
         usePseudo ? pseudoWord(normalized) : realPool[Math.floor(Math.random() * realPool.length)],
       );
@@ -82,7 +154,7 @@ export function drillWords(letters: string[], count: number): string[] {
     return out;
   }
 
-  // Real words first (deduped, shuffled), then pad with pseudo-words.
+  // Tiny real-word pool — use everything we have, then pad with pseudo-words.
   const shuffled = [...new Set(realPool)].sort(() => Math.random() - 0.5);
   for (const w of shuffled) {
     if (out.length >= count) break;
@@ -93,3 +165,4 @@ export function drillWords(letters: string[], count: number): string[] {
   }
   return out;
 }
+
