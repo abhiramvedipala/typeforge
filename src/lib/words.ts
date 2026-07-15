@@ -37,22 +37,59 @@ export function randomQuote(): string {
   return QUOTES[Math.floor(Math.random() * QUOTES.length)];
 }
 
-// Generate words emphasizing chosen letters
+// Build a pseudo-word using only the given letters. Length 2-7, weighted natural.
+function pseudoWord(letters: string[]): string {
+  if (letters.length === 0) return "";
+  // Length distribution favouring 3-5.
+  const lengths = [2, 3, 3, 4, 4, 4, 5, 5, 6, 7];
+  const len = lengths[Math.floor(Math.random() * lengths.length)];
+  let out = "";
+  let last = "";
+  for (let i = 0; i < len; i++) {
+    let ch = letters[Math.floor(Math.random() * letters.length)];
+    // Avoid same char 3x in a row when we have more than one letter available.
+    if (letters.length > 1 && out.length >= 2 && out[out.length - 1] === last && ch === last) {
+      ch = letters[Math.floor(Math.random() * letters.length)];
+    }
+    out += ch;
+    last = ch;
+  }
+  return out;
+}
+
+// Generate words composed ONLY of the chosen drill letters.
+// Prefers real common words that fit the set; pads with pseudo-words when the
+// real-word pool is too small (typical for small sets like "asd" or "qz").
 export function drillWords(letters: string[], count: number): string[] {
-  const set = new Set(letters.map((l) => l.toLowerCase()));
+  const normalized = [...new Set(letters.map((l) => l.toLowerCase()).filter(Boolean))];
+  const set = new Set(normalized);
   if (set.size === 0) return randomWords(count);
 
-  const candidates = COMMON_WORDS.filter((w) =>
-    [...w.toLowerCase()].some((ch) => set.has(ch)),
+  const REAL_MIN = 15;
+  const realPool = COMMON_WORDS.filter(
+    (w) => w.length > 0 && [...w.toLowerCase()].every((ch) => set.has(ch)),
   );
-  const heavy = candidates.filter(
-    (w) => [...w.toLowerCase()].filter((ch) => set.has(ch)).length >= 2,
-  );
-  const pool = heavy.length > 20 ? heavy : candidates.length > 0 ? candidates : COMMON_WORDS;
 
   const out: string[] = [];
-  for (let i = 0; i < count; i++) {
-    out.push(pool[Math.floor(Math.random() * pool.length)]);
+  if (realPool.length >= REAL_MIN) {
+    // Mix mostly real words with a sprinkle of pseudo-words for length variety.
+    for (let i = 0; i < count; i++) {
+      const usePseudo = Math.random() < 0.2;
+      out.push(
+        usePseudo ? pseudoWord(normalized) : realPool[Math.floor(Math.random() * realPool.length)],
+      );
+    }
+    return out;
+  }
+
+  // Real words first (deduped, shuffled), then pad with pseudo-words.
+  const shuffled = [...new Set(realPool)].sort(() => Math.random() - 0.5);
+  for (const w of shuffled) {
+    if (out.length >= count) break;
+    out.push(w);
+  }
+  while (out.length < count) {
+    out.push(pseudoWord(normalized));
   }
   return out;
 }
