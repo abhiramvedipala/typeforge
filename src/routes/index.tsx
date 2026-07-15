@@ -485,7 +485,13 @@ function Index() {
                 selected={drillLetters}
                 onChange={(l) => {
                   setDrillLetters(l);
-                  if (l.length) setText(drillWords(l, 40).join(" "));
+                  setResult(null);
+                  setRestartTick((n) => n + 1);
+                  if (l.length) {
+                    setText(drillWords(l, 40).join(" "));
+                  } else {
+                    setText(randomWords(40).join(" "));
+                  }
                 }}
                 onGenerate={newText}
               />
