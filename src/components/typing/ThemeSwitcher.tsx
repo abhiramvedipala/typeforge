@@ -6,6 +6,7 @@ const THEMES = [
   { id: "synthwave", label: "synthwave" },
   { id: "paper", label: "paper" },
   { id: "matrix", label: "matrix" },
+  { id: "pixel", label: "pixel" },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];
