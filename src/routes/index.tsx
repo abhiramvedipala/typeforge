@@ -408,13 +408,19 @@ function Index() {
     <div className="min-h-screen bg-[color:var(--type-bg)] text-[color:var(--type-text)] flex flex-col">
       <Toaster position="top-center" />
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 sm:px-6 py-4 max-w-6xl mx-auto w-full">
-        <div className="flex items-baseline gap-2 min-w-0">
+        <div className="flex items-baseline gap-4 min-w-0">
           <span className="font-mono text-xl font-bold text-[color:var(--type-accent)]">
             type<span className="text-[color:var(--type-text)]">forge</span>
           </span>
-          <span className="text-xs text-[color:var(--type-muted)] hidden sm:inline">
-            // typing practice
-          </span>
+          <nav aria-label="Primary" className="flex items-center gap-3 text-xs font-mono">
+            <span className="text-[color:var(--type-accent)]">practice</span>
+            <Link
+              to="/lessons"
+              className="text-[color:var(--type-muted)] hover:text-[color:var(--type-text)] transition"
+            >
+              lessons
+            </Link>
+          </nav>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
           <SoundToggle value={soundProfile} onChange={setSoundProfile} />
