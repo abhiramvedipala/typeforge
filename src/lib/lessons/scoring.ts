@@ -22,12 +22,9 @@ export function starsFor(lesson: Lesson, wpm: number, accuracy: number): number 
   return 1;
 }
 
-/** Lesson 1 is always open; every other lesson needs 2★ on the one before it. */
-export function isUnlocked(lesson: Lesson, progress: LessonProgressMap): boolean {
-  if (lesson.number === 1) return true;
-  const prev = LESSONS.find((l) => l.number === lesson.number - 1);
-  if (!prev) return true;
-  return (progress[prev.id]?.stars ?? 0) >= UNLOCK_STARS;
+/** All lessons are always unlocked — learners can pick any lesson freely. */
+export function isUnlocked(_lesson: Lesson, _progress: LessonProgressMap): boolean {
+  return true;
 }
 
 /** The lesson to nudge the learner toward: first unlocked-but-unfinished one. */
