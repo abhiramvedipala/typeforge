@@ -16,6 +16,7 @@ TypeForge aims to streamline the process of working with complex types. Whether 
 - **Type-Safe**: Built to ensure strong type constraints and minimize runtime errors.
 - **Lightweight**: Minimal dependencies to keep your project fast and efficient.
 - **Extensible**: Easily extend the core functionalities to fit your custom requirements.
+- Upcoming feature is : connecting the project to the cloud so that project wil be aviabel across the globe and runs perfetly alright 
 
 ##  Installation
 
@@ -23,3 +24,5 @@ You can install `typeforge` via npm:
 
 ```bash
 npm install typeforge
+
+
