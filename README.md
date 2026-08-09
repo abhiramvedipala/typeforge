@@ -1,4 +1,4 @@
-# TypeForge 
+# TypeForge - a typing practice website 
 
 [![GitHub release](https://img.shields.io/github/v/release/abhiramvedipala/typeforge.svg)](https://github.com/abhiramvedipala/typeforge/releases)
 [![License](https://img.shields.io/github/license/abhiramvedipala/typeforge.svg)](https://github.com/abhiramvedipala/typeforge/blob/main/LICENSE)
