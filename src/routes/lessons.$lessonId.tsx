@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTypingEngine, type TypingResult } from "@/hooks/use-typing-engine";
 import { TypingDisplay } from "@/components/typing/TypingDisplay";
 import { LiveStats } from "@/components/typing/LiveStats";
@@ -36,21 +36,51 @@ function LessonPlayerPage() {
     }
   }, [lesson, progress, progressLoaded, navigate]);
 
+  // Text generation can touch the lazily-loaded drill dictionary (see
+  // words.ts), so it's resolved before the player — and its typing-engine
+  // keydown listener — ever mounts. Otherwise a keystroke landing before the
+  // fetch resolves would race against an empty text and instantly "finish"
+  // an empty lesson.
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    if (!lesson) return;
+    let cancelled = false;
+    setText(null);
+    generateLessonText(lesson).then((result) => {
+      if (!cancelled) setText(result.text);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lesson]);
+
   if (!lesson || !progressLoaded || !isUnlocked(lesson, progress)) {
     return null;
+  }
+
+  if (text === null) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-24">
+        <p className="text-xs font-mono text-[color:var(--type-muted)]">loading lesson…</p>
+      </div>
+    );
   }
 
   // Keyed by lesson id so navigating straight to the next lesson (no route
   // remount otherwise, since it's the same dynamic segment) still resets all
   // player state — outcome, restart tick, started flag.
-  return <LessonPlayer key={lesson.id} lesson={lesson} onProgressChange={setProgress} />;
+  return (
+    <LessonPlayer key={lesson.id} lesson={lesson} text={text} onProgressChange={setProgress} />
+  );
 }
 
 function LessonPlayer({
   lesson,
+  text,
   onProgressChange,
 }: {
   lesson: Lesson;
+  text: string;
   onProgressChange: (p: LessonProgressMap) => void;
 }) {
   const navigate = useNavigate();
@@ -58,10 +88,6 @@ function LessonPlayer({
   const [restartTick, setRestartTick] = useState(0);
   const [outcome, setOutcome] = useState<LessonOutcome | null>(null);
   const [isNewBest, setIsNewBest] = useState(false);
-
-  // Deterministic per lesson id — a retry sees the exact same text as the
-  // first attempt, so results are directly comparable.
-  const { text } = useMemo(() => generateLessonText(lesson), [lesson]);
 
   const onComplete = useCallback(
     (result: TypingResult) => {

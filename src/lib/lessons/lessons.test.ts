@@ -54,16 +54,16 @@ describe("curriculum", () => {
 });
 
 describe("generateLessonText", () => {
-  it("is deterministic for a given lesson id", () => {
+  it("is deterministic for a given lesson id", async () => {
     const lesson = LESSONS[0];
-    const a = generateLessonText(lesson);
-    const b = generateLessonText(lesson);
+    const a = await generateLessonText(lesson);
+    const b = await generateLessonText(lesson);
     expect(a.text).toBe(b.text);
   });
 
-  it("only uses characters from the lesson's pool (plus spaces)", () => {
+  it("only uses characters from the lesson's pool (plus spaces)", async () => {
     for (const lesson of [LESSONS[0], LESSONS[9], LESSONS[19], LESSONS[29]]) {
-      const { text } = generateLessonText(lesson);
+      const { text } = await generateLessonText(lesson);
       const allowed = new Set([...lesson.pool, " "]);
       for (const ch of text) {
         expect(allowed.has(ch)).toBe(true);
@@ -71,9 +71,9 @@ describe("generateLessonText", () => {
     }
   });
 
-  it("produces non-trivial text for every lesson", () => {
+  it("produces non-trivial text for every lesson", async () => {
     for (const lesson of LESSONS) {
-      const { text } = generateLessonText(lesson);
+      const { text } = await generateLessonText(lesson);
       expect(text.length).toBeGreaterThan(0);
     }
   });

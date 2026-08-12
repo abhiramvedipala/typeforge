@@ -23,7 +23,7 @@ import {
   saveHeatmapSettings,
   type HeatmapSettings as HeatmapSettingsType,
 } from "@/lib/heatmap-settings";
-import { drillWords, randomQuote, randomWords } from "@/lib/words";
+import { drillWords, preloadDrillDictionary, randomQuote, randomWords } from "@/lib/words";
 import {
   ingestRun,
   loadStats,
@@ -230,9 +230,13 @@ function Index() {
     else if (mode === "words") setText(randomWords(wordsValue).join(" "));
     else if (mode === "quote") setText(randomQuote());
     else if (mode === "zen") setText(randomWords(200).join(" "));
-    else if (mode === "drill")
-      setText(drillWords(drillLetters.length ? drillLetters : ["a", "s", "d", "f"], 40).join(" "));
-    else if (mode === "smart" || mode === "ai" || mode === "custom") {
+    else if (mode === "drill") {
+      // drillWords lazily fetches the drill dictionary on first call — see
+      // words.ts. preloadDrillDictionary() below usually has it warmed by now.
+      drillWords(drillLetters.length ? drillLetters : ["a", "s", "d", "f"], 40).then((words) =>
+        setText(words.join(" ")),
+      );
+    } else if (mode === "smart" || mode === "ai" || mode === "custom") {
       // Clear so the input/picker UI shows; user generates next text manually.
       setText("");
       activeSmartTargetsRef.current = null;
@@ -247,6 +251,13 @@ function Index() {
     newText();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, timeValue, wordsValue]);
+
+  // Warm the (lazily-loaded) drill dictionary as soon as drill mode is
+  // selected, so the drillWords() call above resolves instantly instead of
+  // stalling on the network. See words.ts.
+  useEffect(() => {
+    if (mode === "drill") preloadDrillDictionary();
+  }, [mode]);
 
   const profileRef = useRef(soundProfile);
   useEffect(() => {
@@ -494,7 +505,7 @@ function Index() {
                   setResult(null);
                   setRestartTick((n) => n + 1);
                   if (l.length) {
-                    setText(drillWords(l, 40).join(" "));
+                    drillWords(l, 40).then((words) => setText(words.join(" ")));
                   } else {
                     setText(randomWords(40).join(" "));
                   }

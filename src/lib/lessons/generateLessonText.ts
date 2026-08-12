@@ -132,13 +132,14 @@ function blendPhase(
 
 /**
  * Phase E — real words. Reuses the drill-mode generator so there is exactly one
- * dictionary-filtering / pseudo-word implementation in the codebase.
+ * dictionary-filtering / pseudo-word implementation in the codebase. This is
+ * the one phase that touches the (lazily-loaded) dictionary chunk, hence async.
  */
-function wordsPhase(pool: string[], budget: number, rng: () => number): string[] {
+async function wordsPhase(pool: string[], budget: number, rng: () => number): Promise<string[]> {
   if (pool.length === 0) return [];
   // Roughly 5 characters per word including the trailing space.
   const wanted = Math.max(1, Math.ceil(budget / 5));
-  const words = drillWords(pool, wanted, rng);
+  const words = await drillWords(pool, wanted, rng);
   const out: string[] = [];
   let used = 0;
   for (const w of words) {
@@ -161,9 +162,11 @@ function commonWordsPhase(budget: number, rng: () => number): string[] {
 
 /**
  * Generate the full practice text for a lesson, phase by phase.
- * Deterministic for a given lesson id.
+ * Deterministic for a given lesson id. Async because the words phase may need
+ * to fetch the (lazily-loaded) drill dictionary chunk on first use — see
+ * words.ts. Every other phase resolves synchronously under the hood.
  */
-export function generateLessonText(lesson: Lesson): LessonText {
+export async function generateLessonText(lesson: Lesson): Promise<LessonText> {
   const rng = rngFromKey(`typeforge-lesson-${lesson.id}-v1`);
   const weights = normalizeWeights(lesson);
 
@@ -175,7 +178,7 @@ export function generateLessonText(lesson: Lesson): LessonText {
     const budget = Math.round(lesson.charCount * weights[phase]);
     if (budget <= 0) continue;
 
-    const tokens = generatePhase(phase, lesson, budget, rng);
+    const tokens = await generatePhase(phase, lesson, budget, rng);
     if (tokens.length === 0) continue;
 
     const body = tokens.join(" ");
@@ -189,12 +192,12 @@ export function generateLessonText(lesson: Lesson): LessonText {
   return { text: parts.join(" "), chunks };
 }
 
-function generatePhase(
+async function generatePhase(
   phase: PhaseId,
   lesson: Lesson,
   budget: number,
   rng: () => number,
-): string[] {
+): Promise<string[]> {
   const isFullAlphabet = lesson.pool.length >= 26;
   switch (phase) {
     case "isolate":

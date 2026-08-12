@@ -1,8 +1,10 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { ThemeSwitcher } from "@/components/typing/ThemeSwitcher";
 import { AccountMenu } from "@/components/typing/AccountMenu";
 import { SoundToggle, useSoundProfile } from "@/components/typing/SoundToggle";
 import { useAuth } from "@/hooks/use-auth";
+import { preloadDrillDictionary } from "@/lib/words";
 
 export const Route = createFileRoute("/lessons")({
   head: () => ({
@@ -32,6 +34,13 @@ export const Route = createFileRoute("/lessons")({
 function LessonsLayout() {
   const [soundProfile, setSoundProfile] = useSoundProfile();
   const { user, loading: authLoading } = useAuth();
+
+  // Almost every lesson's word phase needs the drill dictionary. Kick the
+  // fetch off as soon as the learner is anywhere in the lessons section, so
+  // it's typically already cached by the time they open a lesson.
+  useEffect(() => {
+    preloadDrillDictionary();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[color:var(--type-bg)] text-[color:var(--type-text)] flex flex-col">
