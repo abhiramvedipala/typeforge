@@ -13,10 +13,26 @@ export type ThemeId = (typeof THEMES)[number]["id"];
 
 const STORAGE_KEY = "typeforge-theme";
 
+const PIXEL_FONT_LINK_ID = "pixel-theme-font";
+const PIXEL_FONT_HREF = "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap";
+
+// The pixel theme's display font is loaded on first use rather than as a
+// render-blocking <link> in the document head, so the other five themes
+// never pay for it. Idempotent — safe to call on every theme switch.
+function ensurePixelFontLoaded() {
+  if (document.getElementById(PIXEL_FONT_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = PIXEL_FONT_LINK_ID;
+  link.rel = "stylesheet";
+  link.href = PIXEL_FONT_HREF;
+  document.head.appendChild(link);
+}
+
 export function applyTheme(id: ThemeId) {
   const root = document.documentElement;
   THEMES.forEach((t) => root.classList.remove(`theme-${t.id}`));
   root.classList.add(`theme-${id}`);
+  if (id === "pixel") ensurePixelFontLoaded();
   try {
     localStorage.setItem(STORAGE_KEY, id);
   } catch {}

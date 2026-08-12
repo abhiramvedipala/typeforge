@@ -108,12 +108,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap",
-      },
+      // "Press Start 2P" is only used by the pixel theme. Loading it as a
+      // render-blocking stylesheet here would delay first paint for every
+      // visitor, on every page, even the ~5/6 who never touch that theme —
+      // and if the Google Fonts request stalls (offline, restrictive
+      // network), it drags page load out further still. It's loaded on
+      // demand instead, only when the pixel theme is actually active — see
+      // ThemeSwitcher.tsx.
     ],
   }),
 
