@@ -20,9 +20,12 @@ export const Route = createFileRoute("/lessons/")({
 function LessonsIndexPage() {
   const navigate = useNavigate();
   const [progress, setProgress] = useState<LessonProgressMap>({});
+  const [tracks, setTracks] = useState<CustomTrack[]>([]);
+  const [builderOpen, setBuilderOpen] = useState(false);
 
   useEffect(() => {
     setProgress(loadProgress());
+    setTracks(loadTracks());
   }, []);
 
   const summary = summarize(progress);
