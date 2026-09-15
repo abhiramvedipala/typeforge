@@ -60,6 +60,43 @@ function LessonsIndexPage() {
         </div>
       </div>
 
+      <section>
+        <h2 className="font-mono text-xs uppercase tracking-wider text-[color:var(--type-muted)] mb-3">
+          my lessons
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <button
+            type="button"
+            onClick={() => setBuilderOpen(true)}
+            className="rounded border border-dashed border-[color:var(--type-border)] hover:border-[color:var(--type-accent)] p-3 text-left font-mono text-sm text-[color:var(--type-muted)] hover:text-[color:var(--type-accent)] transition min-h-[92px]"
+          >
+            + custom lesson
+            <span className="block text-[11px] mt-1">pick your own keys</span>
+          </button>
+          {tracks.map((t) => (
+            <CustomTrackCard
+              key={t.id}
+              track={t}
+              onOpen={(track) =>
+                navigate({ to: "/lessons/custom/$trackId", params: { trackId: track.id } })
+              }
+              onDelete={(track) => setTracks(deleteTrack(track.id))}
+            />
+          ))}
+        </div>
+      </section>
+
+      <CustomLessonModal
+        open={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        onCreate={(input) => {
+          const track = createTrack(input);
+          setTracks(loadTracks());
+          setBuilderOpen(false);
+          navigate({ to: "/lessons/custom/$trackId", params: { trackId: track.id } });
+        }}
+      />
+
       {STAGES.map((stage) => (
         <StageSection
           key={stage.id}
