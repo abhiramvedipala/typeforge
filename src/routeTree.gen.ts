@@ -13,6 +13,7 @@ import { Route as LessonsRouteImport } from './routes/lessons'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LessonsIndexRouteImport } from './routes/lessons.index'
 import { Route as LessonsLessonIdRouteImport } from './routes/lessons.$lessonId'
+import { Route as LessonsCustomTrackIdRouteImport } from './routes/lessons.custom.$trackId'
 
 const LessonsRoute = LessonsRouteImport.update({
   id: '/lessons',
@@ -34,17 +35,24 @@ const LessonsLessonIdRoute = LessonsLessonIdRouteImport.update({
   path: '/$lessonId',
   getParentRoute: () => LessonsRoute,
 } as any)
+const LessonsCustomTrackIdRoute = LessonsCustomTrackIdRouteImport.update({
+  id: '/custom/$trackId',
+  path: '/custom/$trackId',
+  getParentRoute: () => LessonsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/lessons': typeof LessonsRouteWithChildren
   '/lessons/$lessonId': typeof LessonsLessonIdRoute
   '/lessons/': typeof LessonsIndexRoute
+  '/lessons/custom/$trackId': typeof LessonsCustomTrackIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/lessons/$lessonId': typeof LessonsLessonIdRoute
   '/lessons': typeof LessonsIndexRoute
+  '/lessons/custom/$trackId': typeof LessonsCustomTrackIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -52,13 +60,25 @@ export interface FileRoutesById {
   '/lessons': typeof LessonsRouteWithChildren
   '/lessons/$lessonId': typeof LessonsLessonIdRoute
   '/lessons/': typeof LessonsIndexRoute
+  '/lessons/custom/$trackId': typeof LessonsCustomTrackIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/lessons' | '/lessons/$lessonId' | '/lessons/'
+  fullPaths:
+    | '/'
+    | '/lessons'
+    | '/lessons/$lessonId'
+    | '/lessons/'
+    | '/lessons/custom/$trackId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/lessons/$lessonId' | '/lessons'
-  id: '__root__' | '/' | '/lessons' | '/lessons/$lessonId' | '/lessons/'
+  to: '/' | '/lessons/$lessonId' | '/lessons' | '/lessons/custom/$trackId'
+  id:
+    | '__root__'
+    | '/'
+    | '/lessons'
+    | '/lessons/$lessonId'
+    | '/lessons/'
+    | '/lessons/custom/$trackId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -96,17 +116,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LessonsLessonIdRouteImport
       parentRoute: typeof LessonsRoute
     }
+    '/lessons/custom/$trackId': {
+      id: '/lessons/custom/$trackId'
+      path: '/custom/$trackId'
+      fullPath: '/lessons/custom/$trackId'
+      preLoaderRoute: typeof LessonsCustomTrackIdRouteImport
+      parentRoute: typeof LessonsRoute
+    }
   }
 }
 
 interface LessonsRouteChildren {
   LessonsLessonIdRoute: typeof LessonsLessonIdRoute
   LessonsIndexRoute: typeof LessonsIndexRoute
+  LessonsCustomTrackIdRoute: typeof LessonsCustomTrackIdRoute
 }
 
 const LessonsRouteChildren: LessonsRouteChildren = {
   LessonsLessonIdRoute: LessonsLessonIdRoute,
   LessonsIndexRoute: LessonsIndexRoute,
+  LessonsCustomTrackIdRoute: LessonsCustomTrackIdRoute,
 }
 
 const LessonsRouteWithChildren =

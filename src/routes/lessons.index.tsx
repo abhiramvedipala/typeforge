@@ -4,6 +4,14 @@ import { LESSONS, STAGES, lessonsForStage, type Lesson } from "@/data/lessons";
 import { loadProgress, summarize, type LessonProgressMap } from "@/lib/lessons/progress";
 import { nextRecommended } from "@/lib/lessons/scoring";
 import { StageSection } from "@/components/lessons/StageSection";
+import { CustomLessonModal } from "@/components/lessons/CustomLessonModal";
+import { CustomTrackCard } from "@/components/lessons/CustomTrackCard";
+import {
+  createTrack,
+  deleteTrack,
+  loadTracks,
+  type CustomTrack,
+} from "@/lib/custom-lessons/tracks";
 
 export const Route = createFileRoute("/lessons/")({
   component: LessonsIndexPage,
