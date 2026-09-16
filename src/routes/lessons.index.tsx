@@ -12,6 +12,8 @@ import {
   loadTracks,
   type CustomTrack,
 } from "@/lib/custom-lessons/tracks";
+import { pushTrack, removeTrack, syncTracks } from "@/lib/custom-lessons/cloud";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/lessons/")({
   component: LessonsIndexPage,
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/lessons/")({
 
 function LessonsIndexPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [progress, setProgress] = useState<LessonProgressMap>({});
   const [tracks, setTracks] = useState<CustomTrack[]>([]);
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -27,6 +30,17 @@ function LessonsIndexPage() {
     setProgress(loadProgress());
     setTracks(loadTracks());
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    void syncTracks(user.id).then((merged) => {
+      if (alive) setTracks(merged);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [user]);
 
   const summary = summarize(progress);
   const recommended = nextRecommended(progress);
@@ -80,7 +94,10 @@ function LessonsIndexPage() {
               onOpen={(track) =>
                 navigate({ to: "/lessons/custom/$trackId", params: { trackId: track.id } })
               }
-              onDelete={(track) => setTracks(deleteTrack(track.id))}
+              onDelete={(track) => {
+                setTracks(deleteTrack(track.id));
+                if (user) void removeTrack(user.id, track.id);
+              }}
             />
           ))}
         </div>
@@ -92,6 +109,7 @@ function LessonsIndexPage() {
         onCreate={(input) => {
           const track = createTrack(input);
           setTracks(loadTracks());
+          if (user) void pushTrack(user.id, track);
           setBuilderOpen(false);
           navigate({ to: "/lessons/custom/$trackId", params: { trackId: track.id } });
         }}

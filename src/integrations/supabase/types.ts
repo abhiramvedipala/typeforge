@@ -14,6 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      custom_attempt: {
+        Row: {
+          accuracy: number
+          created_at: string
+          difficulty: string
+          errors_by_key: Json
+          id: string
+          passed: boolean
+          track_id: string
+          user_id: string
+          wpm: number
+        }
+        Insert: {
+          accuracy: number
+          created_at?: string
+          difficulty: string
+          errors_by_key?: Json
+          id?: string
+          passed?: boolean
+          track_id: string
+          user_id: string
+          wpm: number
+        }
+        Update: {
+          accuracy?: number
+          created_at?: string
+          difficulty?: string
+          errors_by_key?: Json
+          id?: string
+          passed?: boolean
+          track_id?: string
+          user_id?: string
+          wpm?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_attempt_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "custom_track"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_track: {
+        Row: {
+          charset: string
+          created_at: string
+          current_level: string
+          id: string
+          seed_prompt: string
+          stars: number
+          streak: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          charset: string
+          created_at?: string
+          current_level?: string
+          id: string
+          seed_prompt?: string
+          stars?: number
+          streak?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          charset?: string
+          created_at?: string
+          current_level?: string
+          id?: string
+          seed_prompt?: string
+          stars?: number
+          streak?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_history: {
         Row: {
           accuracy: number

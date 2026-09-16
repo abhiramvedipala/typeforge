@@ -14,6 +14,8 @@ import {
   type CustomTrack,
 } from "@/lib/custom-lessons/tracks";
 import { loadSoundProfile, playKeySound } from "@/lib/sounds";
+import { pushAttempt, pushTrack, syncTracks } from "@/lib/custom-lessons/cloud";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/lessons/custom/$trackId")({
   component: CustomTrackPage,
@@ -32,6 +34,7 @@ interface Outcome {
 function CustomTrackPage() {
   const { trackId } = Route.useParams();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [track, setTrack] = useState<CustomTrack | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [drill, setDrill] = useState<GeneratedDrill | null>(null);
@@ -40,14 +43,29 @@ function CustomTrackPage() {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [tick, setTick] = useState(0);
   const trackRef = useRef<CustomTrack | null>(null);
+  const userIdRef = useRef<string | null>(null);
+  userIdRef.current = user?.id ?? null;
 
   useEffect(() => {
-    const t = getTrack(trackId) ?? null;
-    setTrack(t);
-    trackRef.current = t;
-    setLoaded(true);
-    if (!t) navigate({ to: "/lessons" });
-  }, [trackId, navigate]);
+    if (authLoading) return;
+    let alive = true;
+    const resolve = async () => {
+      let t = getTrack(trackId) ?? null;
+      if (!t && user) {
+        const merged = await syncTracks(user.id);
+        t = merged.find((x) => x.id === trackId) ?? null;
+      }
+      if (!alive) return;
+      setTrack(t);
+      trackRef.current = t;
+      setLoaded(true);
+      if (!t) navigate({ to: "/lessons" });
+    };
+    void resolve();
+    return () => {
+      alive = false;
+    };
+  }, [trackId, navigate, user, authLoading]);
 
   const makeDrill = useCallback(async (t: CustomTrack) => {
     setGenerating(true);
@@ -109,6 +127,12 @@ function CustomTrackPage() {
       if (!res) return;
       setTrack(res.track);
       trackRef.current = res.track;
+      const uid = userIdRef.current;
+      if (uid) {
+        const last = res.track.attempts[res.track.attempts.length - 1];
+        void pushTrack(uid, res.track);
+        if (last) void pushAttempt(uid, res.track.id, t.currentLevel, last);
+      }
       setOutcome({
         wpm: result.wpm,
         accuracy: result.accuracy,
