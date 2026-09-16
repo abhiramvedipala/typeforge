@@ -83,6 +83,11 @@ function persist(tracks: CustomTrack[]): void {
   }
 }
 
+/** Replace the local track list (used when hydrating from the cloud). */
+export function saveTracks(tracks: CustomTrack[]): void {
+  persist(tracks);
+}
+
 export function getTrack(id: string): CustomTrack | undefined {
   return loadTracks().find((t) => t.id === id);
 }
