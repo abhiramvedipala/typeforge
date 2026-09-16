@@ -51,6 +51,7 @@ import {
   saveCloudStats,
 } from "@/lib/cloud-sync";
 import type { Mode, TimeOption, WordsOption } from "@/components/typing/types";
+import { recordWpm } from "@/lib/typing-profile";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -260,6 +261,7 @@ function Index() {
   const onComplete = useCallback(
     (r: TypingResult) => {
       setResult(r);
+      recordWpm(r.wpm);
       // Ingest per-key + bigram stats
       let mergedStats: StatsBundle | null = null;
       setStats((prev) => {

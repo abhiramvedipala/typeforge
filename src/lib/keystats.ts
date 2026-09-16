@@ -211,6 +211,41 @@ export function diagnoseWeaknesses(
   return { keys: keys.slice(0, topN), bigrams: bigrams.slice(0, topN) };
 }
 
+/**
+ * Weakest letter keys from the heatmap, biased toward the slow ones (the keys
+ * your fingers hesitate on) rather than errors alone. `speedBias` 0 = errors
+ * only, 1 = slowness only. Falls back to the plain diagnosis when almost no
+ * timing data exists yet.
+ */
+export function weakKeysWeighted(
+  bundle: StatsBundle,
+  limit = 8,
+  speedBias = 0.65,
+  minAttempts = 4,
+): string[] {
+  const ref = medianMs(bundle.keys);
+  const scored: { key: string; score: number }[] = [];
+  for (const k of Object.keys(bundle.keys)) {
+    if (!/^[a-z]$/.test(k)) continue;
+    const s = bundle.keys[k];
+    if (s.attempts < minAttempts) continue;
+    const acc = (s.attempts - s.errors) / s.attempts;
+    const ms = s.intervals > 0 ? s.totalMs / s.intervals : ref;
+    // slowness: 0 at the median, grows as the key gets slower than median
+    const slowness = Math.max(0, Math.min(1.5, ms / Math.max(60, ref) - 1)) / 1.5;
+    const score = slowness * speedBias + (1 - acc) * (1 - speedBias);
+    if (score <= 0) continue;
+    scored.push({ key: k, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  const picked = scored.slice(0, limit).map((s) => s.key);
+  if (picked.length >= Math.min(limit, 4)) return picked;
+  const fallback = diagnoseWeaknesses(bundle, { topN: limit }).keys.map((w) =>
+    w.token.toLowerCase(),
+  );
+  return Array.from(new Set([...picked, ...fallback])).slice(0, limit);
+}
+
 // Snapshot for measuring improvement after a smart drill.
 export interface TargetSnapshot {
   keys: Record<string, { accuracy: number; avgMs: number | null; attempts: number }>;

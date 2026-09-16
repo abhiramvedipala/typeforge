@@ -16,6 +16,9 @@ import {
 import { loadSoundProfile, playKeySound } from "@/lib/sounds";
 import { pushAttempt, pushTrack, syncTracks } from "@/lib/custom-lessons/cloud";
 import { useAuth } from "@/hooks/use-auth";
+import { ingestRun, loadStats, saveStats, weakKeysWeighted } from "@/lib/keystats";
+import { debounced, saveCloudStats } from "@/lib/cloud-sync";
+import { averageWpm, recordWpm } from "@/lib/typing-profile";
 
 export const Route = createFileRoute("/lessons/custom/$trackId")({
   component: CustomTrackPage,
@@ -42,9 +45,14 @@ function CustomTrackPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [tick, setTick] = useState(0);
+  const [myAvgWpm, setMyAvgWpm] = useState(0);
   const trackRef = useRef<CustomTrack | null>(null);
   const userIdRef = useRef<string | null>(null);
   userIdRef.current = user?.id ?? null;
+
+  useEffect(() => {
+    setMyAvgWpm(averageWpm());
+  }, [outcome]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -71,11 +79,20 @@ function CustomTrackPage() {
     setGenerating(true);
     setNotice(null);
     setOutcome(null);
+    // This track's own misses first, then the global heatmap's slowest keys —
+    // both filtered to the track's charset.
+    let globalWeak: string[] = [];
+    try {
+      globalWeak = weakKeysWeighted(loadStats(), 8).filter((k) => t.charset.includes(k));
+    } catch {
+      globalWeak = [];
+    }
+    const weak = Array.from(new Set([...weakKeysForTrack(t), ...globalWeak])).slice(0, 8);
     try {
       const d = await generateDrill({
         charset: t.charset,
         difficulty: t.currentLevel,
-        weakKeys: weakKeysForTrack(t),
+        weakKeys: weak,
         seedPrompt: t.seedPrompt,
         ai: async (req) => {
           const res = await generateLessonWords({ data: req });
@@ -123,10 +140,24 @@ function CustomTrackPage() {
         const key = (k.expected ?? k.key).toLowerCase();
         errorsByKey[key] = (errorsByKey[key] ?? 0) + 1;
       }
-      const avgWpm =
+      // Feed this drill into the shared heatmap so lesson practice shapes the
+      // practice-mode keyboard and smart drills too.
+      let mergedStats: ReturnType<typeof ingestRun> | null = null;
+      try {
+        mergedStats = ingestRun(loadStats(), result.keystrokes);
+        saveStats(mergedStats);
+      } catch {
+        mergedStats = null;
+      }
+      recordWpm(result.wpm);
+
+      const trackAvg =
         t.attempts.length > 0
           ? t.attempts.reduce((s, a) => s + a.wpm, 0) / t.attempts.length
           : 0;
+      // Gates scale to real ability: whichever is higher, this track's pace or
+      // the user's overall recent speed.
+      const avgWpm = Math.max(trackAvg, averageWpm());
       const gate = passGate(t.currentLevel, avgWpm);
       const res = recordAttempt(
         t.id,
@@ -141,6 +172,12 @@ function CustomTrackPage() {
         const last = res.track.attempts[res.track.attempts.length - 1];
         void pushTrack(uid, res.track);
         if (last) void pushAttempt(uid, res.track.id, t.currentLevel, last);
+        if (mergedStats) {
+          const snapshot = mergedStats;
+          debounced(`stats-${uid}`, 800, () => {
+            saveCloudStats(uid, snapshot).catch(() => {});
+          });
+        }
       }
       setOutcome({
         wpm: result.wpm,
@@ -188,8 +225,11 @@ function CustomTrackPage() {
           {track.charset.split("").join(" ")}
         </p>
         <p className="text-[11px] font-mono text-[color:var(--type-muted)] mt-1">
-          pass: {passGate(track.currentLevel).wpm} wpm · {passGate(track.currentLevel).accuracy}%
-          accuracy
+          pass: {passGate(track.currentLevel, myAvgWpm).wpm} wpm ·{" "}
+          {passGate(track.currentLevel, myAvgWpm).accuracy}% accuracy
+          {myAvgWpm > 0 && passGate(track.currentLevel, myAvgWpm).wpm > passGate(track.currentLevel).wpm
+            ? " · tuned to your speed"
+            : ""}
         </p>
       </div>
 
