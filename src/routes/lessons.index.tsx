@@ -1,5 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AuthDialog } from "@/components/typing/AuthDialog";
 import { LESSONS, STAGES, lessonsForStage, type Lesson } from "@/data/lessons";
 import { loadProgress, summarize, type LessonProgressMap } from "@/lib/lessons/progress";
 import { nextRecommended } from "@/lib/lessons/scoring";
@@ -25,6 +26,7 @@ function LessonsIndexPage() {
   const [progress, setProgress] = useState<LessonProgressMap>({});
   const [tracks, setTracks] = useState<CustomTrack[]>([]);
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
     setProgress(loadProgress());
