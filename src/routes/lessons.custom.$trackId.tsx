@@ -16,6 +16,9 @@ import {
 import { loadSoundProfile, playKeySound } from "@/lib/sounds";
 import { pushAttempt, pushTrack, syncTracks } from "@/lib/custom-lessons/cloud";
 import { useAuth } from "@/hooks/use-auth";
+import { ingestRun, loadStats, saveStats, weakKeysWeighted } from "@/lib/keystats";
+import { debounced, saveCloudStats } from "@/lib/cloud-sync";
+import { averageWpm, recordWpm } from "@/lib/typing-profile";
 
 export const Route = createFileRoute("/lessons/custom/$trackId")({
   component: CustomTrackPage,
