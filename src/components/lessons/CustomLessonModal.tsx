@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { KeyboardPicker } from "./KeyboardPicker";
 import { buildCharset } from "@/lib/custom-lessons/charset";
 import { DIFFICULTIES, type Difficulty } from "@/lib/custom-lessons/difficulty";
-import { diagnoseWeaknesses, loadStats } from "@/lib/keystats";
+import { loadStats, weakKeysWeighted } from "@/lib/keystats";
 
 interface Props {
   open: boolean;
@@ -25,8 +25,8 @@ export function CustomLessonModal({ open, onClose, onCreate }: Props) {
   useEffect(() => {
     if (!open) return;
     try {
-      const { keys } = diagnoseWeaknesses(loadStats(), { topN: 8 });
-      setWeakKeys(keys.map((k) => k.token.toLowerCase()));
+      // Slowest / most-fumbled keys straight from the live heatmap.
+      setWeakKeys(weakKeysWeighted(loadStats(), 8));
     } catch {
       setWeakKeys([]);
     }
