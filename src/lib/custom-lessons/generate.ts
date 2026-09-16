@@ -17,6 +17,10 @@ export interface GeneratedDrill {
   source: DrillSource;
   charset: string;
   difficulty: Difficulty;
+  /** True when this charset/theme needed the AI stage. */
+  aiAttempted?: boolean;
+  /** Set when the AI stage produced nothing usable and the dictionary took over. */
+  aiFallbackReason?: "unavailable" | "rate-limited" | "illegal-output";
 }
 
 export type AiGenerator = (req: {
@@ -27,7 +31,7 @@ export type AiGenerator = (req: {
   maxLength: number;
   weakKeys: string[];
   seedPrompt: string;
-}) => Promise<{ words: unknown[] }>;
+}) => Promise<{ words: unknown[]; rateLimited?: boolean }>;
 
 export interface GenerateOptions {
   charset: string;
@@ -78,6 +82,7 @@ export async function generateDrill(opts: GenerateOptions): Promise<GeneratedDri
 
   // ---- Stage 2: AI generation (themed / exotic charsets only) --------------
   let aiWords: string[] = [];
+  let reason: GeneratedDrill["aiFallbackReason"];
   try {
     const res = await opts.ai!({
       charset,
@@ -88,10 +93,15 @@ export async function generateDrill(opts: GenerateOptions): Promise<GeneratedDri
       weakKeys: [...weakKeys],
       seedPrompt,
     });
+    const raw = Array.isArray(res?.words) ? res.words : [];
     // ---- Stage 3: hard validation — discard, never "fix" ------------------
-    aiWords = filterLegal(Array.isArray(res?.words) ? res.words : [], charset);
+    aiWords = filterLegal(raw, charset);
+    if (aiWords.length === 0) {
+      reason = res?.rateLimited ? "rate-limited" : raw.length > 0 ? "illegal-output" : "unavailable";
+    }
   } catch {
     aiWords = []; // model down or malformed — the dictionary path serves the drill
+    reason = "unavailable";
   }
 
   // ---- Stage 4: top-up to the exact word count ----------------------------
@@ -106,7 +116,14 @@ export async function generateDrill(opts: GenerateOptions): Promise<GeneratedDri
 
   const legalAi = aiWords.length;
   const source: DrillSource = legalAi === 0 ? "dictionary" : legalAi >= pool.length ? "ai" : "mixed";
-  return { words: buildDrill(pool, difficulty, rng), source, charset, difficulty };
+  return {
+    words: buildDrill(pool, difficulty, rng),
+    source,
+    charset,
+    difficulty,
+    aiAttempted: true,
+    ...(reason ? { aiFallbackReason: reason } : {}),
+  };
 }
 
 /** Move words containing weak keys to the front so they get drilled more. */
