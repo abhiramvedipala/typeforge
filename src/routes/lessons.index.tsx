@@ -109,6 +109,7 @@ function LessonsIndexPage() {
         onCreate={(input) => {
           const track = createTrack(input);
           setTracks(loadTracks());
+          if (user) void pushTrack(user.id, track);
           setBuilderOpen(false);
           navigate({ to: "/lessons/custom/$trackId", params: { trackId: track.id } });
         }}
