@@ -74,11 +74,20 @@ function CustomTrackPage() {
     setGenerating(true);
     setNotice(null);
     setOutcome(null);
+    // This track's own misses first, then the global heatmap's slowest keys —
+    // both filtered to the track's charset.
+    let globalWeak: string[] = [];
+    try {
+      globalWeak = weakKeysWeighted(loadStats(), 8).filter((k) => t.charset.includes(k));
+    } catch {
+      globalWeak = [];
+    }
+    const weak = Array.from(new Set([...weakKeysForTrack(t), ...globalWeak])).slice(0, 8);
     try {
       const d = await generateDrill({
         charset: t.charset,
         difficulty: t.currentLevel,
-        weakKeys: weakKeysForTrack(t),
+        weakKeys: weak,
         seedPrompt: t.seedPrompt,
         ai: async (req) => {
           const res = await generateLessonWords({ data: req });
