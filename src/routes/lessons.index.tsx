@@ -94,7 +94,10 @@ function LessonsIndexPage() {
               onOpen={(track) =>
                 navigate({ to: "/lessons/custom/$trackId", params: { trackId: track.id } })
               }
-              onDelete={(track) => setTracks(deleteTrack(track.id))}
+              onDelete={(track) => {
+                setTracks(deleteTrack(track.id));
+                if (user) void removeTrack(user.id, track.id);
+              }}
             />
           ))}
         </div>
