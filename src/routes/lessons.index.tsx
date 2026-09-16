@@ -75,9 +75,31 @@ function LessonsIndexPage() {
       </div>
 
       <section>
-        <h2 className="font-mono text-xs uppercase tracking-wider text-[color:var(--type-muted)] mb-3">
-          my lessons
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 className="font-mono text-xs uppercase tracking-wider text-[color:var(--type-muted)]">
+            my lessons
+          </h2>
+          <Link
+            to="/lessons/plan"
+            className="text-[11px] font-mono text-[color:var(--type-muted)] hover:text-[color:var(--type-accent)] transition"
+          >
+            lesson plan →
+          </Link>
+        </div>
+
+        {!user && tracks.length > 0 && (
+          <p className="mb-3 text-[11px] font-mono text-[color:var(--type-muted)]">
+            saved on this device only —{" "}
+            <button
+              type="button"
+              onClick={() => setAuthOpen(true)}
+              className="text-[color:var(--type-accent)] underline underline-offset-2"
+            >
+              sign in
+            </button>{" "}
+            to keep this progress on every device
+          </p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <button
             type="button"
