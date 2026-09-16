@@ -12,6 +12,8 @@ import {
   loadTracks,
   type CustomTrack,
 } from "@/lib/custom-lessons/tracks";
+import { pushTrack, removeTrack, syncTracks } from "@/lib/custom-lessons/cloud";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/lessons/")({
   component: LessonsIndexPage,
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/lessons/")({
 
 function LessonsIndexPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [progress, setProgress] = useState<LessonProgressMap>({});
   const [tracks, setTracks] = useState<CustomTrack[]>([]);
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -27,6 +30,17 @@ function LessonsIndexPage() {
     setProgress(loadProgress());
     setTracks(loadTracks());
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    void syncTracks(user.id).then((merged) => {
+      if (alive) setTracks(merged);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [user]);
 
   const summary = summarize(progress);
   const recommended = nextRecommended(progress);
