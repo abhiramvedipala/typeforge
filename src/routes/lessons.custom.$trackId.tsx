@@ -127,6 +127,12 @@ function CustomTrackPage() {
       if (!res) return;
       setTrack(res.track);
       trackRef.current = res.track;
+      const uid = userIdRef.current;
+      if (uid) {
+        const last = res.track.attempts[res.track.attempts.length - 1];
+        void pushTrack(uid, res.track);
+        if (last) void pushAttempt(uid, res.track.id, t.currentLevel, last);
+      }
       setOutcome({
         wpm: result.wpm,
         accuracy: result.accuracy,
