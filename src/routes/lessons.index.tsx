@@ -139,6 +139,9 @@ function LessonsIndexPage() {
         }}
       />
 
+      <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
+
+
       {STAGES.map((stage) => (
         <StageSection
           key={stage.id}
