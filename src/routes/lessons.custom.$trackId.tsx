@@ -45,9 +45,14 @@ function CustomTrackPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [tick, setTick] = useState(0);
+  const [myAvgWpm, setMyAvgWpm] = useState(0);
   const trackRef = useRef<CustomTrack | null>(null);
   const userIdRef = useRef<string | null>(null);
   userIdRef.current = user?.id ?? null;
+
+  useEffect(() => {
+    setMyAvgWpm(averageWpm());
+  }, [outcome]);
 
   useEffect(() => {
     if (authLoading) return;
