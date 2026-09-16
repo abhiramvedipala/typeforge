@@ -14,7 +14,8 @@ import {
   type CustomTrack,
 } from "@/lib/custom-lessons/tracks";
 import { loadSoundProfile, playKeySound } from "@/lib/sounds";
-import { pushAttempt, pushTrack, syncTracks } from "@/lib/custom-lessons/cloud";
+import { pushAttempt, pushTrack } from "@/lib/custom-lessons/cloud";
+import { syncProgress } from "@/lib/progress-sync";
 import { useAuth } from "@/hooks/use-auth";
 import { ingestRun, loadStats, saveStats, weakKeysWeighted } from "@/lib/keystats";
 import { debounced, saveCloudStats } from "@/lib/cloud-sync";
@@ -59,9 +60,10 @@ function CustomTrackPage() {
     let alive = true;
     const resolve = async () => {
       let t = getTrack(trackId) ?? null;
-      if (!t && user) {
-        const merged = await syncTracks(user.id);
-        t = merged.find((x) => x.id === trackId) ?? null;
+      if (user) {
+        // Pulls tracks, the heatmap and recent speeds down from the account.
+        const merged = await syncProgress(user.id);
+        t = merged.find((x) => x.id === trackId) ?? t;
       }
       if (!alive) return;
       setTrack(t);

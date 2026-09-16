@@ -52,6 +52,7 @@ import {
 } from "@/lib/cloud-sync";
 import type { Mode, TimeOption, WordsOption } from "@/components/typing/types";
 import { recordWpm } from "@/lib/typing-profile";
+import { syncWpmHistory } from "@/lib/progress-sync";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -163,6 +164,9 @@ function Index() {
         }
         setStats(finalStats);
         saveStats(finalStats);
+        // Recent speeds from the account, so lesson pass bars match this user
+        // on any device they sign in on.
+        void syncWpmHistory(uid);
 
         if (cloudSettings) {
           if (cloudSettings.theme) applyTheme(cloudSettings.theme as ThemeId);

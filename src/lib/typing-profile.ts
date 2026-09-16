@@ -31,6 +31,21 @@ export function recordWpm(wpm: number): void {
   }
 }
 
+/** Replace the local samples (used when the account has a richer history). */
+export function setWpmSamples(samples: number[]): void {
+  if (typeof window === "undefined") return;
+  const clean = samples
+    .map((n) => Math.round(Number(n)))
+    .filter((n) => Number.isFinite(n) && n > 0 && n < 400)
+    .slice(-MAX_SAMPLES);
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(clean));
+  } catch {
+    // best-effort
+  }
+}
+
+
 /** Average of recent runs; 0 when there isn't enough history to trust. */
 export function averageWpm(minSamples = 3): number {
   const s = loadWpmSamples();
