@@ -14,6 +14,8 @@ import {
   type CustomTrack,
 } from "@/lib/custom-lessons/tracks";
 import { loadSoundProfile, playKeySound } from "@/lib/sounds";
+import { pushAttempt, pushTrack, syncTracks } from "@/lib/custom-lessons/cloud";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/lessons/custom/$trackId")({
   component: CustomTrackPage,
