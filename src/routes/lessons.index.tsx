@@ -13,7 +13,8 @@ import {
   loadTracks,
   type CustomTrack,
 } from "@/lib/custom-lessons/tracks";
-import { pushTrack, removeTrack, syncTracks } from "@/lib/custom-lessons/cloud";
+import { pushTrack, removeTrack } from "@/lib/custom-lessons/cloud";
+import { syncProgress } from "@/lib/progress-sync";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/lessons/")({
@@ -36,7 +37,7 @@ function LessonsIndexPage() {
   useEffect(() => {
     if (!user) return;
     let alive = true;
-    void syncTracks(user.id).then((merged) => {
+    void syncProgress(user.id).then((merged) => {
       if (alive) setTracks(merged);
     });
     return () => {

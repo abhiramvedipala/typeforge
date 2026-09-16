@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { loadTracks, type CustomTrack } from "@/lib/custom-lessons/tracks";
 import { planForTrack, type TrackPlan } from "@/lib/custom-lessons/plan";
-import { syncTracks } from "@/lib/custom-lessons/cloud";
+import { syncProgress } from "@/lib/progress-sync";
 import { averageWpm } from "@/lib/typing-profile";
 import { useAuth } from "@/hooks/use-auth";
 import { PASSES_TO_ADVANCE } from "@/lib/custom-lessons/difficulty";
@@ -52,7 +52,7 @@ function LessonPlanPage() {
   useEffect(() => {
     if (!user) return;
     let alive = true;
-    void syncTracks(user.id).then((merged) => {
+    void syncProgress(user.id).then((merged) => {
       if (alive) build(merged);
     });
     return () => {
