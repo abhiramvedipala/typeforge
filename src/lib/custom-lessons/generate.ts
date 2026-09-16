@@ -17,6 +17,10 @@ export interface GeneratedDrill {
   source: DrillSource;
   charset: string;
   difficulty: Difficulty;
+  /** True when this charset/theme needed the AI stage. */
+  aiAttempted?: boolean;
+  /** Set when the AI stage produced nothing usable and the dictionary took over. */
+  aiFallbackReason?: "unavailable" | "rate-limited" | "illegal-output";
 }
 
 export type AiGenerator = (req: {
@@ -27,7 +31,7 @@ export type AiGenerator = (req: {
   maxLength: number;
   weakKeys: string[];
   seedPrompt: string;
-}) => Promise<{ words: unknown[] }>;
+}) => Promise<{ words: unknown[]; rateLimited?: boolean }>;
 
 export interface GenerateOptions {
   charset: string;
