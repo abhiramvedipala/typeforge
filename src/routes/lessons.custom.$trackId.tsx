@@ -225,8 +225,11 @@ function CustomTrackPage() {
           {track.charset.split("").join(" ")}
         </p>
         <p className="text-[11px] font-mono text-[color:var(--type-muted)] mt-1">
-          pass: {passGate(track.currentLevel).wpm} wpm · {passGate(track.currentLevel).accuracy}%
-          accuracy
+          pass: {passGate(track.currentLevel, myAvgWpm).wpm} wpm ·{" "}
+          {passGate(track.currentLevel, myAvgWpm).accuracy}% accuracy
+          {myAvgWpm > 0 && passGate(track.currentLevel, myAvgWpm).wpm > passGate(track.currentLevel).wpm
+            ? " · tuned to your speed"
+            : ""}
         </p>
       </div>
 
