@@ -79,12 +79,21 @@ function CustomTrackPage() {
         seedPrompt: t.seedPrompt,
         ai: async (req) => {
           const res = await generateLessonWords({ data: req });
-          return { words: res.words ?? [] };
+          return {
+            words: res.words ?? [],
+            rateLimited: "rateLimited" in res ? Boolean(res.rateLimited) : false,
+          };
         },
       });
       setDrill(d);
       setTick((n) => n + 1);
-      if (d.words.length === 0) setNotice("couldn't build a drill for that key set");
+      if (d.words.length === 0) {
+        setNotice("couldn't build a drill for that key set");
+      } else if (d.aiFallbackReason === "rate-limited") {
+        setNotice("lots of AI drills generated recently — using the built-in word list for now");
+      } else if (d.aiFallbackReason) {
+        setNotice("ai text wasn't usable for these keys — built the drill from the dictionary");
+      }
     } catch {
       setNotice("generation hiccuped — using the built-in word list");
       const d = await generateDrill({
