@@ -60,9 +60,10 @@ function CustomTrackPage() {
     let alive = true;
     const resolve = async () => {
       let t = getTrack(trackId) ?? null;
-      if (!t && user) {
+      if (user) {
+        // Pulls tracks, the heatmap and recent speeds down from the account.
         const merged = await syncProgress(user.id);
-        t = merged.find((x) => x.id === trackId) ?? null;
+        t = merged.find((x) => x.id === trackId) ?? t;
       }
       if (!alive) return;
       setTrack(t);
