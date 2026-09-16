@@ -135,10 +135,24 @@ function CustomTrackPage() {
         const key = (k.expected ?? k.key).toLowerCase();
         errorsByKey[key] = (errorsByKey[key] ?? 0) + 1;
       }
-      const avgWpm =
+      // Feed this drill into the shared heatmap so lesson practice shapes the
+      // practice-mode keyboard and smart drills too.
+      let mergedStats: ReturnType<typeof ingestRun> | null = null;
+      try {
+        mergedStats = ingestRun(loadStats(), result.keystrokes);
+        saveStats(mergedStats);
+      } catch {
+        mergedStats = null;
+      }
+      recordWpm(result.wpm);
+
+      const trackAvg =
         t.attempts.length > 0
           ? t.attempts.reduce((s, a) => s + a.wpm, 0) / t.attempts.length
           : 0;
+      // Gates scale to real ability: whichever is higher, this track's pace or
+      // the user's overall recent speed.
+      const avgWpm = Math.max(trackAvg, averageWpm());
       const gate = passGate(t.currentLevel, avgWpm);
       const res = recordAttempt(
         t.id,
@@ -153,6 +167,12 @@ function CustomTrackPage() {
         const last = res.track.attempts[res.track.attempts.length - 1];
         void pushTrack(uid, res.track);
         if (last) void pushAttempt(uid, res.track.id, t.currentLevel, last);
+        if (mergedStats) {
+          const snapshot = mergedStats;
+          debounced(`stats-${uid}`, 800, () => {
+            saveCloudStats(uid, snapshot).catch(() => {});
+          });
+        }
       }
       setOutcome({
         wpm: result.wpm,
