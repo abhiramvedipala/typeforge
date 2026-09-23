@@ -1,4 +1,4 @@
-# TypeForge -- ttyping webiste -- checkout the new feeature 
+# TypeForge 
 
 
 [![GitHub release](https://img.shields.io/github/v/release/abhiramvedipala/typeforge.svg)](https://github.com/abhiramvedipala/typeforge/releases)
